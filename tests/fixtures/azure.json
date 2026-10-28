@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "meta": {
+    "title": "Pipeline de données sur Azure",
+    "subtitle": "Data Factory, Databricks et dbt · exemple fictif",
+    "language": "fr"
+  },
+  "nodes": [
+    { "id": "dbt", "label": "dbt", "sub": "snapshots · modèles", "icon": "dbt", "kind": "compute" },
+    { "id": "adf", "label": "Data Pipeline", "sub": "pipeline planifié", "kind": "orchestrator" },
+    { "id": "kv", "label": "Key Vault", "sub": "secrets et mots de passe", "kind": "service" },
+    { "id": "sql", "label": "SQL Server", "sub": "base SQL · commandes", "kind": "source" },
+    {
+      "id": "cat",
+      "label": "Data Catalog",
+      "sub": "tables et schémas",
+      "icon": "databricks",
+      "kind": "service"
+    },
+    {
+      "id": "nb",
+      "label": "Notebook",
+      "sub": "code exécuté dans Databricks",
+      "icon": "databricks",
+      "kind": "compute"
+    },
+    {
+      "id": "br",
+      "label": "Bronze",
+      "sub": "Parquet · brut",
+      "kind": "storage",
+      "layer": "bronze"
+    },
+    {
+      "id": "sv",
+      "label": "Silver",
+      "sub": "Delta · snapshots",
+      "icon": "delta",
+      "kind": "storage",
+      "layer": "silver"
+    },
+    {
+      "id": "gd",
+      "label": "Gold",
+      "sub": "Delta · modèles",
+      "icon": "delta",
+      "kind": "storage",
+      "layer": "gold"
+    }
+  ],
+  "groups": [
+    { "id": "local", "label": "Poste local Windows", "color": "gray", "children": ["dbt"] },
+    { "id": "factory", "label": "Data Factory", "color": "purple", "children": ["adf"] },
+    {
+      "id": "dbx",
+      "label": "Databricks",
+      "icon": "databricks",
+      "color": "orange",
+      "children": ["cat", "nb"]
+    },
+    { "id": "src", "label": "Source SQL", "color": "blue", "children": ["sql"] },
+    { "id": "stor", "label": "Storage Account", "color": "teal", "children": ["br", "sv", "gd"] },
+    {
+      "id": "azure",
+      "label": "Azure · Resource Group",
+      "color": "gray",
+      "children": ["factory", "kv", "dbx", "src", "stor"]
+    }
+  ],
+  "edges": [
+    { "id": "e1", "from": "dbt", "to": "cat", "label": "transformation" },
+    { "id": "e2", "from": "adf", "to": "nb", "label": "déclenche", "style": "trigger" },
+    { "id": "e3", "from": "adf", "to": "br", "label": "orchestre", "style": "trigger" },
+    { "id": "e4", "from": "sql", "to": "br", "label": "extraction de données" },
+    { "id": "e5", "from": "nb", "to": "br", "label": "écrit en Parquet" },
+    { "id": "e6", "from": "nb", "to": "sv", "label": "snapshots" },
+    { "id": "e7", "from": "cat", "to": "gd", "label": "modèles" },
+    { "id": "e8", "from": "br", "to": "cat", "label": "référencé" },
+    { "id": "e9", "from": "cat", "to": "sv" }
+  ],
+  "steps": [
+    {
+      "id": "s1",
+      "title": "Vue d'ensemble",
+      "text": "Les briques du pipeline sur Azure.",
+      "focus": []
+    },
+    {
+      "id": "s2",
+      "title": "L'extraction",
+      "text": "Data Factory extrait la base SQL vers Bronze.",
+      "focus": ["sql", "br", "e4"],
+      "zoom": ["sql", "br"]
+    }
+  ]
+}

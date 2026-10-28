@@ -2,6 +2,7 @@
 
 exports[`placement de l'exemple intégré > garde le même placement (instantané) 1`] = `
 {
+  "edgeLabels": {},
   "edges": {
     "e1": [
       {
@@ -58,7 +59,7 @@ exports[`placement de l'exemple intégré > garde le même placement (instantan�
     "af": {
       "depth": 0,
       "height": 278,
-      "width": 451,
+      "width": 466,
       "x": 712,
       "y": 24,
     },
@@ -110,6 +111,6 @@ exports[`placement de l'exemple intégré > garde le même placement (instantan�
       "y": 144,
     },
   },
-  "width": 1187,
+  "width": 1202,
 }
 `;
