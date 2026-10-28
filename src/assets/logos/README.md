@@ -5,6 +5,8 @@ Dépose ici les vrais logos des outils (officiels, en couleur, fond transparent)
 - **Le nom du fichier est la clé d'icône** de la spec : `airflow.svg` sert à `"icon": "airflow"`. Minuscules recommandées.
 - **Formats** : SVG (recommandé) ou PNG à fond transparent, 256 px de côté au minimum pour rester net en zoom.
 - **Thème sombre** : si le logo a un texte foncé, ajoute une variante `airflow.dark.svg` (ou `.dark.png`), utilisée en thème sombre. Sans variante, le logo s'affiche sur une pastille claire arrondie en thème sombre.
+- **Logos larges** (symbole + nom) : leurs proportions sont conservées. Dans un nœud, la zone fait 40 de haut et jusqu'à 108 de large (un logo carré reste à 40) ; dans l'en-tête d'un groupe, 26 de haut et jusqu'à 56 de large. Préfère un fichier **rogné au plus près** du logo, sans marge blanche.
+- **Fond transparent** : un PNG sans transparence (fond blanc) se voit sur le fond clair des nœuds. Fournis un PNG ou un SVG transparent.
 - Les logos ne sont **jamais modifiés ni recolorés** : ils s'affichent tels quels, proportions conservées.
 - Un logo fourni pour un groupe (Airflow, dbt…) s'affiche dans l'en-tête du cadre, à côté du titre.
 

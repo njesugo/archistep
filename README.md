@@ -58,7 +58,7 @@ Le schéma a été généralisé quand il ne pouvait pas exprimer l'exemple, san
 
 ## Logos
 
-Dépose les vrais logos (SVG, ou PNG transparent d'au moins 256 px) dans [src/assets/logos/](src/assets/logos/), nommés d'après la clé d'icône (`airflow.svg` pour `"icon": "airflow"`) ; variante optionnelle `airflow.dark.svg` pour le thème sombre. Ils ne sont jamais modifiés. À défaut, l'icône vient de `simple-icons`, puis d'une icône générique selon le `kind`. Règles détaillées : [src/assets/logos/README.md](src/assets/logos/README.md).
+Dépose les vrais logos (SVG, ou PNG transparent d'au moins 256 px) dans [src/assets/logos/](src/assets/logos/), nommés d'après la clé d'icône (`airflow.svg` pour `"icon": "airflow"`) ; variante optionnelle `airflow.dark.svg` pour le thème sombre. Ils ne sont jamais modifiés, et un logo large (symbole + nom) garde ses proportions : la zone d'un nœud s'adapte (40 de haut, jusqu'à 108 de large). À défaut, l'icône vient de `simple-icons`, puis d'une icône générique selon le `kind`. Règles détaillées : [src/assets/logos/README.md](src/assets/logos/README.md).
 
 `npm run logos:check` liste, pour chaque exemple, d'où vient chaque icône. Le tiroir Spec signale aussi les logos manquants (jamais sur le schéma présenté).
 

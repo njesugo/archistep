@@ -13,12 +13,16 @@ import { GenericIcon } from "../icons/generic";
 import { FlowPackets } from "./FlowPackets";
 import type { ResolvedFlow } from "../engine/flow";
 import { hasLogo, useIcon, type ResolvedIcon } from "../icons/registry";
+import { useIconBox } from "../icons/useIconBox";
 import { useCamera } from "../useCamera";
 import type { Spec, SpecGroup, SpecNode } from "../spec/schema";
 import "../styles/scene.css";
 
-const NODE_ICON = 40;
-const GROUP_ICON = 26;
+/** Cadre des logos d'un nœud : un logo large (avec son nom) s'étale, un logo carré reste à 40. */
+const NODE_ICON_H = 40;
+const NODE_ICON_MAX_W = 108;
+const GROUP_ICON_H = 26;
+const GROUP_ICON_MAX_W = 56;
 /** Marge intérieure d'un nœud, de chaque côté du texte. */
 const NODE_TEXT_PAD = 10;
 /** Titre de groupe : 14 px, mono, majuscules, espacement 0,1 em. */
@@ -28,21 +32,18 @@ function IconGlyph({
   icon,
   x,
   y,
-  size,
+  width,
+  height,
 }: {
   icon: ResolvedIcon;
+  /** Coin haut gauche de la boîte de l'icône. */
   x: number;
   y: number;
-  size: number;
+  width: number;
+  height: number;
 }) {
   if (icon.source === "user") {
-    const common = {
-      x,
-      y,
-      width: size,
-      height: size,
-      preserveAspectRatio: "xMidYMid meet",
-    } as const;
+    const common = { x, y, width, height, preserveAspectRatio: "xMidYMid meet" } as const;
     return (
       <g>
         {/* Thème sombre sans variante .dark : pastille claire derrière le logo */}
@@ -51,8 +52,8 @@ function IconGlyph({
             className="logo-pill"
             x={x - 5}
             y={y - 5}
-            width={size + 10}
-            height={size + 10}
+            width={width + 10}
+            height={height + 10}
             rx={10}
           />
         )}
@@ -70,12 +71,12 @@ function IconGlyph({
       <path
         d={icon.path}
         fill={`#${icon.hex}`}
-        transform={`translate(${x} ${y}) scale(${size / 24})`}
+        transform={`translate(${x} ${y}) scale(${height / 24})`}
       />
     );
   }
   return (
-    <g className="glyph" transform={`translate(${x} ${y}) scale(${size / 24})`}>
+    <g className="glyph" transform={`translate(${x} ${y}) scale(${height / 24})`}>
       <GenericIcon kind={icon.kind} />
     </g>
   );
@@ -104,6 +105,7 @@ function NodeView({
   revealed: ReadonlySet<string> | null;
 }) {
   const icon = useIcon(node.icon, node.kind);
+  const iconBox = useIconBox(icon, NODE_ICON_MAX_W, NODE_ICON_H);
   const cx = rect.x + rect.width / 2;
   const style = node.layer ? ({ "--c": `var(--${node.layer})` } as CSSProperties) : undefined;
   // Un nom long passe à une taille plus petite, puis sur deux lignes, puis est tronqué ;
@@ -121,7 +123,13 @@ function NodeView({
   return (
     <g className={stateClass("node", node.id, lit, revealed)} data-id={node.id} style={style}>
       <rect x={rect.x} y={rect.y} width={rect.width} height={rect.height} rx={14} />
-      <IconGlyph icon={icon} x={cx - NODE_ICON / 2} y={rect.y + 12} size={NODE_ICON} />
+      <IconGlyph
+        icon={icon}
+        x={cx - iconBox.width / 2}
+        y={rect.y + 12 + (NODE_ICON_H - iconBox.height) / 2}
+        width={iconBox.width}
+        height={iconBox.height}
+      />
       {cut && <title>{[node.label, node.sub].filter(Boolean).join(" · ")}</title>}
       <text className="nt" x={cx} y={rect.y + (twoLines ? 70 : 77)} fontSize={label.size}>
         {label.lines.map((line, i) => (
@@ -157,7 +165,8 @@ function GroupView({
   // Pas d'icône générique pour un groupe : sans logo, le titre suffit.
   const hasIcon = hasLogo(group.icon);
   const style = { "--c": `var(--g-${group.color ?? "gray"})` } as CSSProperties;
-  const titleX = rect.x + (hasIcon ? 54 : 22);
+  const iconBox = useIconBox(icon, GROUP_ICON_MAX_W, GROUP_ICON_H);
+  const titleX = rect.x + (hasIcon ? 20 + iconBox.width + 10 : 22);
   const full = group.label.toUpperCase();
   const title = truncate(
     full,
@@ -174,7 +183,15 @@ function GroupView({
         height={rect.height}
         rx={rect.depth === 0 ? 20 : 16}
       />
-      {hasIcon && <IconGlyph icon={icon} x={rect.x + 20} y={rect.y + 13} size={GROUP_ICON} />}
+      {hasIcon && (
+        <IconGlyph
+          icon={icon}
+          x={rect.x + 20}
+          y={rect.y + 13 + (GROUP_ICON_H - iconBox.height) / 2}
+          width={iconBox.width}
+          height={iconBox.height}
+        />
+      )}
       {title !== full && <title>{group.label}</title>}
       <text x={titleX} y={rect.y + 32}>
         {title}
