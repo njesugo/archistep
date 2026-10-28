@@ -63,6 +63,30 @@ Le schéma a été généralisé quand il ne pouvait pas exprimer l'exemple, san
 - un bouton « Construction progressive » remplace `meta.buildMode` le temps de la session ;
 - hébergement sur Vercel et non Netlify (voir « Déploiement ») ; Node 22 au lieu de 20 (Node 20 n'est plus maintenu) ; six couleurs du thème clair ont été légèrement assombries pour atteindre le contraste AA.
 
+## Génération par IA
+
+**Générer avec l'IA** (tiroir Spec) ouvre une fenêtre où tu décris ton architecture et/ou colles une image (`Ctrl+V`, glisser-déposer ou fichier ; PNG, JPEG, WebP ou GIF, 4 au plus). L'application envoie le prompt de génération et ton contenu à l'API Claude, puis te montre une **relecture** : la spec proposée, son aperçu et ses erreurs de validation. **Rien n'est appliqué avant ton clic sur « Utiliser cette spec »** ; si elle est invalide, « Corriger avec l'IA » renvoie la version fautive avec ses erreurs, et « Ouvrir dans l'éditeur » permet de corriger à la main. Le résultat passe ensuite par la validation et l'éditeur habituels.
+
+- **Clé API** : à créer sur [console.anthropic.com](https://console.anthropic.com/settings/keys) (compte avec du crédit ; elle est distincte d'un abonnement à Claude). Elle est enregistrée **uniquement dans ton navigateur** (`localStorage`, au choix) et n'est envoyée qu'à `api.anthropic.com`. « Oublier la clé » la supprime. À n'utiliser que sur un ordinateur qui t'appartient.
+- **Modèles** (liste déroulante) : Claude Sonnet 5.5 par défaut, Claude Opus 5.5 (plus précis), Claude Haiku 5.5 (économique). Chaque génération est facturée sur ta clé ; la fenêtre affiche le **coût estimé** (tarifs de `src/ai/models.ts`, à vérifier dans ta console). Le prompt de génération est envoyé comme message système mis en cache : une deuxième demande dans les minutes qui suivent coûte moins cher.
+- **Images** : réduites dans le navigateur à 1568 px au plus avant l'envoi (au-delà, l'API les réduit elle-même, pour le même coût).
+- **Erreurs** : clé refusée, crédit insuffisant, trop de demandes, service indisponible, réseau coupé, refus du modèle, réponse coupée ou sans JSON sont expliqués en français. « Annuler » interrompt la génération.
+- **Sans nouveau serveur** : l'appel part du navigateur (SDK officiel `@anthropic-ai/sdk`, chargé seulement à la première génération). Pas de repli automatique vers un autre modèle en cas de refus : tu choisis un autre modèle toi-même.
+- **Code** : `src/ai/` (requête, images, extraction du JSON, erreurs, coûts), `src/components/GenerateDialog.tsx`.
+
+### Sécurité
+
+Comme la clé vit dans le navigateur, la page porte une **politique de sécurité du contenu** (`csp.ts`, injectée dans la page construite) : elle ne peut contacter que son propre site et `api.anthropic.com`, et ne charge de scripts que de son propre site. Un script injecté ne pourrait donc pas envoyer la clé ailleurs. La CSP n'est pas active avec `npm run dev`. Un test automatique vérifie ses directives ; Zod est réglé en `jitless` parce qu'elle interdit `eval`.
+
+## Lien de partage
+
+**Copier le lien** (tiroir Spec) copie l'adresse de la page suivie de `#spec=z.…` : la dernière spec valide, compressée (deflate natif du navigateur, sans dépendance) puis écrite en base64url dans le **fragment** de l'URL. Le fragment n'est jamais envoyé au serveur : rien n'est stocké en ligne. Le lien de l'exemple complet fait environ 3 900 caractères. Au-delà de 8 000 caractères, le tiroir prévient que certaines messageries tronquent les liens : il faut alors partager le fichier avec **Exporter**.
+
+- **Ouverture** : le schéma de la spec s'affiche directement (sans passer par l'exemple). Une spec ouverte depuis un lien n'est **pas enregistrée** dans le navigateur tant qu'on ne la modifie pas : ouvrir le lien de quelqu'un n'écrase pas sa propre spec sauvegardée. Dès qu'on la modifie, ou qu'on importe un fichier ou un exemple, elle devient la spec de la personne et le lien disparaît de la barre d'adresse. Coller un autre lien dans la même page l'ouvre aussi.
+- **Lien illisible** (coupé, abîmé, format inconnu, spec invalide) : le tiroir s'ouvre avec une explication en français, et la spec précédente reste affichée.
+- **Protection** : la décompression s'arrête à 2 Mo (une archive piégée qui se gonflerait en gigaoctets est refusée). La spec du lien passe par la même validation qu'une spec collée ; elle n'exécute rien.
+- **À savoir** : le lien contient **tout le contenu** de la spec, compressé mais **pas chiffré** : n'y mets rien de confidentiel. Les logos ne voyagent pas dans le lien : ils viennent des fichiers de l'application, donc un logo que tu as ajouté chez toi n'apparaîtra pas chez les autres tant qu'il n'est pas dans le dépôt.
+
 ## Panneaux en colonnes
 
 Par défaut, les panneaux d'une étape sont empilés dans la colonne de droite. Pour les placer côte à côte (comparer deux tables, deux extraits de code, une liste et un tableau…), l'étape déclare `"panelColumns": 2` (ou 3) : la légende passe alors au-dessus et les panneaux occupent toute la largeur, dans une grille, dans l'ordre de `panels`. Un panneau peut occuper plusieurs colonnes avec `"span"` (par exemple une requête ou un DAG large : `"span": 2`). `span` ne peut pas dépasser `panelColumns` (la validation l'explique). Sur petit écran (moins de 820 px), tout s'empile. Les surlignages des sous-étapes visent toujours un panneau par son indice dans `panels`.
@@ -104,6 +128,7 @@ npm run logos:check  # d'où vient chaque logo des exemples
 ### Fonctionnement du moteur
 
 - **Placement** (`engine/layout.ts`) : ELK, algorithme `layered`, de gauche à droite, routage orthogonal, groupes imbriqués ; nœuds de 140 × 110. Un instantané du placement de l'exemple est testé (`npx vitest -u` le régénère après un changement volontaire).
+  - **Rien ne se chevauche** : la taille de chaque étiquette de lien est donnée à ELK, qui lui réserve une place entre les colonnes ; elle passe sur deux lignes au-delà de 130 px, est dessinée au-dessus des nœuds et des cadres avec un halo, et une étiquette longue élargit donc le schéma (mieux vaut des étiquettes courtes). Un groupe est au moins assez large pour son titre en entier (logo et flèche vers un groupe contenu compris). Un nœud s'élargit de 140 à 240 au plus pour son sous-titre, au-delà tronqué (texte complet en infobulle). Les mesures sont estimées d'après la taille de la police (`src/engine/text.ts`), sans lire le DOM. Les tests contrôlent l'absence de chevauchement sur l'exemple et sur une architecture plus complexe (`tests/fixtures/azure.json`).
 - **Rendu** (`components/Scene.tsx`) : groupes du plus extérieur au plus intérieur, liens, nœuds, puis paquets. Un nom long est réduit (jamais sous 14), passé sur deux lignes, puis tronqué ; le texte complet reste en infobulle.
 - **Pas à pas** (`engine/state.ts`) : les ids de `focus` et leurs groupes ancêtres sont éclairés, le reste est atténué à 25 %. Les sous-étapes sont parcourues avant l'étape suivante ; les pastilles désignent les étapes.
 - **Flux** (`engine/flow.ts`) : position des paquets calculée en fonction du temps sur le tracé du lien, une seule demande `requestAnimationFrame` en attente, arrêt au changement d'étape.
