@@ -52,7 +52,8 @@ export function fitAspect(frame: Frame, aspect: number): Frame {
 }
 
 /**
- * Cadre à viser pour une étape. Sans `zoom` (ou sans id connu) : le schéma complet.
+ * Cadre à viser pour une étape. Sans `zoom` (ou sans id connu) : le schéma complet, au moins
+ * aussi large que MIN_FRAME_WIDTH (une petite spec n'est pas agrandie à l'excès).
  * Sinon : la boîte des éléments, étendue vers le haut jusqu'au bord de leur groupe parent
  * (pour garder son titre à l'image), plus une marge, pas plus étroite que MIN_FRAME_WIDTH,
  * ajustée au rapport de la scène, puis recalée dans le schéma si elle y tient. `parentOf` : id d'un élément → id de son groupe parent.
@@ -64,7 +65,12 @@ export function frameFor(
   parentOf?: ReadonlyMap<string, string>,
 ): Frame {
   const found = zoom?.length ? boundingBox(zoom, layout) : null;
-  if (!found) return fitAspect({ x: 0, y: 0, width: layout.width, height: layout.height }, aspect);
+  if (!found) {
+    // Vue d'ensemble : tout le schéma, sans l'agrandir au-delà du zoom maximal (petite spec).
+    const width = Math.max(layout.width, MIN_FRAME_WIDTH);
+    const full = { x: (layout.width - width) / 2, y: 0, width, height: layout.height };
+    return fitAspect(full, aspect);
+  }
 
   let box = found;
   for (const id of zoom ?? []) {

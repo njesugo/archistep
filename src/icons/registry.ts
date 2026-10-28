@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { buildLogoTable, simpleIconsSlug, type LogoEntry, type NodeKind } from "./resolve";
+import {
+  buildLogoTable,
+  iconSource,
+  simpleIconsSlug,
+  type LogoEntry,
+  type NodeKind,
+} from "./resolve";
 
 // Logos fournis par l'utilisateur : la table se construit seule d'après les noms de fichier.
 const userFiles = import.meta.glob("/src/assets/logos/*.{svg,png}", {
@@ -73,6 +79,13 @@ export function useIcon(key: string | undefined, kind?: NodeKind): ResolvedIcon 
   if (wanted && loaded?.slug === wanted && loaded.icon)
     return { source: "simple-icons", ...loaded.icon };
   return { source: "generic", kind };
+}
+
+/** D'où viendra l'icône d'une clé : fichier fourni, simple-icons ou icône générique. */
+let simpleSlugs: Set<string> | null = null;
+export function iconSourceFor(key: string | undefined) {
+  simpleSlugs ??= new Set(simpleIconLoaders.keys());
+  return iconSource(key, userLogos, simpleSlugs);
 }
 
 /** Un logo (fourni ou simple-icons) existe-t-il pour cette clé ? Réponse immédiate, sans chargement. */

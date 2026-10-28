@@ -2,7 +2,7 @@
 
 Outil web qui transforme une description d'architecture de données en schéma animé, présenté étape par étape, pour des vidéos pédagogiques. Cahier des charges : [docs/SPEC.md](docs/SPEC.md). Prototype de référence : [docs/reference/prototype.html](docs/reference/prototype.html).
 
-**État : jalon M7 (construction progressive et sous-étapes).** Pas à pas avec flux animés, caméra, sous-étapes (`beats`) et construction progressive. Pas encore d'éditeur de spec ni de mode présentation.
+**État : jalon M8 (spec en direct).** Pas à pas complet, et tiroir Spec : éditeur JSON validé en direct, import, export, exemples, sauvegarde locale, prompt de génération copiable. Pas encore de mode présentation.
 
 **Site déployé :** <https://archistep.netlify.app/>
 
@@ -100,3 +100,13 @@ L'animation tourne avec `requestAnimationFrame` (une seule demande en attente) e
 - **Sous-étapes** (`beats`) : **Suivant** parcourt d'abord les sous-étapes d'une étape, puis passe à la suivante ; **Précédent** fait l'inverse. Les pastilles désignent les étapes (elles mènent à la première sous-étape). Un compteur « 2/3 » s'affiche à côté du numéro d'étape quand il y a plusieurs sous-étapes.
 - **Ce qu'une sous-étape change** : son `focus` _remplace_ celui de l'étape (reprends des ids pour les conserver ; groupes ancêtres inclus), son `text` remplace le texte, son `highlight` surligne dans le panneau `highlight.panel` (le premier par défaut) : `rows` seul = lignes entières, `cols` seul = colonnes entières, les deux = leur intersection, `lines` = lignes de code. Le reste du panneau est atténué.
 - **Construction progressive** (`meta.buildMode: "progressive"`, ou le bouton « Construction progressive » pour l'essayer le temps de la session) : un élément reste invisible tant qu'aucun état (étape ou sous-étape) jusqu'à l'état courant ne l'a mis en valeur ; il apparaît alors et reste. La mise en page ne bouge pas.
+
+## Tiroir Spec
+
+Le bouton **Spec** ouvre un tiroir (à côté du schéma sur grand écran, par-dessus sur petit écran ; Échap le ferme).
+
+- **Éditeur** : le JSON est validé 250 ms après la dernière frappe. S'il est valide, le schéma se met à jour sans rechargement, à l'étape courante. Sinon, les erreurs s'affichent et la dernière version valide reste à l'écran ; cliquer sur une erreur sélectionne l'endroit fautif dans l'éditeur.
+- **Importer** un fichier `.json` (remis en forme s'il est compact), **Exporter** la spec valide (`titre-de-la-spec.json`), choisir un **exemple** intégré (`src/examples/index.ts`). Un import ou un exemple ramène à la première étape.
+- **Sauvegarde locale** : chaque version valide est enregistrée dans le navigateur (`localStorage`) et rechargée à la visite suivante. Choisir un exemple la remplace.
+- **Logos** : liste des clés d'icônes de la spec, avec une pastille « logo manquant » quand aucun fichier n'est fourni dans `src/assets/logos/`.
+- **Prompt de génération** (`src/prompts/generate-spec.md`, l'exemple intégré y est inséré) : à copier dans un assistant avec une description ou une image, puis coller le JSON obtenu dans l'éditeur. Un test vérifie que le prompt décrit toutes les clés et valeurs du schéma.

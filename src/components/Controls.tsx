@@ -7,6 +7,8 @@ type Props = {
   atEnd: boolean;
   progressive: boolean;
   onToggleProgressive: () => void;
+  drawerOpen: boolean;
+  onToggleDrawer: () => void;
   onPrev: () => void;
   onNext: () => void;
   onGoTo: (index: number) => void;
@@ -21,6 +23,8 @@ export function Controls({
   atEnd,
   progressive,
   onToggleProgressive,
+  drawerOpen,
+  onToggleDrawer,
   onPrev,
   onNext,
   onGoTo,
@@ -59,6 +63,15 @@ export function Controls({
           onClick={onToggleProgressive}
         >
           Construction progressive : {progressive ? "oui" : "non"}
+        </button>
+        <button
+          type="button"
+          id="spec-toggle"
+          aria-expanded={drawerOpen}
+          aria-controls="spec-drawer"
+          onClick={onToggleDrawer}
+        >
+          Spec
         </button>
         <button type="button" onClick={onToggleTheme}>
           {themeLabel}

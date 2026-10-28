@@ -147,6 +147,14 @@ describe("cadre d'une étape", () => {
     expect(tall).toEqual({ x: 0, y: -40, width: 100, height: 100 });
   });
 
+  it("n'agrandit pas à l'excès la vue d'ensemble d'une petite spec", () => {
+    const small: Layout = { width: 300, height: 150, nodes: {}, groups: {}, edges: {} };
+    const f = frameFor(small, undefined, 2);
+    expect(f.width).toBeGreaterThanOrEqual(MIN_FRAME_WIDTH);
+    expect(f.x + f.width / 2).toBeCloseTo(150); // centré sur le schéma
+    expect(contains(f, { x: 0, y: 0, width: 300, height: 150 })).toBe(true);
+  });
+
   it("gère un schéma plus étroit que la largeur minimale", () => {
     const small: Layout = {
       width: 200,
