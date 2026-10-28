@@ -161,6 +161,7 @@ describe("tiroir : lien de partage", () => {
         onImport={() => {}}
         onExport={() => {}}
         onLoadExample={() => {}}
+        onGenerate={() => {}}
       />,
     );
 

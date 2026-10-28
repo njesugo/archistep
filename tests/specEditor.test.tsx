@@ -246,6 +246,7 @@ describe("tiroir Spec", () => {
         onImport={noop}
         onExport={noop}
         onLoadExample={noop}
+        onGenerate={noop}
       />,
     );
 
