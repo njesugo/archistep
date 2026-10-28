@@ -20,6 +20,8 @@ Outil web qui transforme une description d'architecture de données en schéma a
 | `←`             | Précédent                                          |
 | `0` ou `Début`  | Première étape (vue d'ensemble)                    |
 | `P`             | Mode présentation (bascule)                        |
+| `L`             | Pointeur laser (bascule)                           |
+| `A`             | Lecture automatique (bascule)                      |
 | `Échap`         | Quitter le mode présentation, ou fermer le tiroir  |
 
 Les raccourcis sont ignorés pendant la saisie dans l'éditeur.
@@ -27,6 +29,15 @@ Les raccourcis sont ignorés pendant la saisie dans l'éditeur.
 ### Mode présentation
 
 L'en-tête, le tiroir et la barre de contrôle disparaissent ; la scène s'élargit et la légende grossit de 32 %. Seul un bouton très discret « Quitter le mode présentation » reste en haut à droite (il devient lisible au survol). Aucun anneau de focus n'est visible à l'entrée dans le mode.
+
+### Lecture automatique
+
+Le bouton **Lecture auto** (ou la touche `A`, qui marche aussi en mode présentation) fait défiler les étapes et leurs sous-étapes toutes seules, pour laisser tourner une présentation sans y toucher.
+
+- **Durée de chaque état** : le temps de lire son texte (environ 200 mots par minute), plus 2,5 s pour repérer ce qui est éclairé, plus 2,5 s s'il a des tableaux ou du code à regarder. Avec l'exemple, comptez de 11 à 16 s par état en vitesse normale.
+- **Vitesse** (liste à côté du bouton) : lente (×1,5), normale ou rapide (×0,65).
+- **Arrêt** : à la fin (un nouvel appui repart du début), ou dès que tu navigues à la main (Précédent, Suivant, flèches, pastille, `0`) : on reprend la main. La lecture est suspendue (« en pause ») tant que le tiroir Spec ou la fenêtre de génération sont ouverts, puis reprend.
+- **Code** : `src/engine/autoplay.ts` (durées), `src/useAutoAdvance.ts` (un seul minuteur, annulé dès qu'on change d'état ou qu'on arrête : aucune fuite).
 
 ### Pointeur laser
 
