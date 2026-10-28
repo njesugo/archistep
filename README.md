@@ -2,7 +2,7 @@
 
 Outil web qui transforme une description d'architecture de données en schéma animé, présenté étape par étape, pour des vidéos pédagogiques. Cahier des charges : [docs/SPEC.md](docs/SPEC.md). Prototype de référence : [docs/reference/prototype.html](docs/reference/prototype.html).
 
-**État : jalon M6 (zoom caméra).** Pas à pas avec flux animés et caméra qui cadre l'élément expliqué. Pas encore de construction progressive ni de sous-étapes.
+**État : jalon M7 (construction progressive et sous-étapes).** Pas à pas avec flux animés, caméra, sous-étapes (`beats`) et construction progressive. Pas encore d'éditeur de spec ni de mode présentation.
 
 **Site déployé :** <https://archistep.netlify.app/>
 
@@ -93,3 +93,10 @@ L'animation tourne avec `requestAnimationFrame` (une seule demande en attente) e
 - **Rapport de la scène** : celui du schéma complet, plafonné à 2,4 pour que les zooms aient de la hauteur. Il est fixe, donc la page ne saute pas d'une étape à l'autre.
 - **Changement d'étape en cours de route** : l'animation repart du cadre réellement affiché. Elle s'arrête seule à l'arrivée.
 - **Mouvement réduit** (`prefers-reduced-motion`) : le cadre change sans déplacement progressif.
+
+## Sous-étapes et construction progressive
+
+- **Vue d'ensemble** : une étape dont le `focus` est vide n'atténue rien et, en construction progressive, montre tout le schéma.
+- **Sous-étapes** (`beats`) : **Suivant** parcourt d'abord les sous-étapes d'une étape, puis passe à la suivante ; **Précédent** fait l'inverse. Les pastilles désignent les étapes (elles mènent à la première sous-étape). Un compteur « 2/3 » s'affiche à côté du numéro d'étape quand il y a plusieurs sous-étapes.
+- **Ce qu'une sous-étape change** : son `focus` _remplace_ celui de l'étape (reprends des ids pour les conserver ; groupes ancêtres inclus), son `text` remplace le texte, son `highlight` surligne dans le panneau `highlight.panel` (le premier par défaut) : `rows` seul = lignes entières, `cols` seul = colonnes entières, les deux = leur intersection, `lines` = lignes de code. Le reste du panneau est atténué.
+- **Construction progressive** (`meta.buildMode: "progressive"`, ou le bouton « Construction progressive » pour l'essayer le temps de la session) : un élément reste invisible tant qu'aucun état (étape ou sous-étape) jusqu'à l'état courant ne l'a mis en valeur ; il apparaît alors et reste. La mise en page ne bouge pas.

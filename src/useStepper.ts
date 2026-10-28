@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { clampStep, keyAction } from "./engine/state";
+import { clampStep, firstIndexOfStep, keyAction, type Position } from "./engine/state";
 
 /** Éléments où les touches servent à autre chose qu'à naviguer. */
 function isTypingTarget(target: EventTarget | null): boolean {
@@ -7,13 +7,19 @@ function isTypingTarget(target: EventTarget | null): boolean {
   return target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
 }
 
-export function useStepper(count: number) {
+/**
+ * Navigation dans la liste des états (étapes et sous-étapes). `count` est le nombre d'étapes :
+ * les pastilles désignent les étapes, pas les sous-étapes.
+ */
+export function useStepper(all: Position[], stepCount: number) {
   const [raw, setRaw] = useState(0);
-  const index = clampStep(raw, count);
+  const last = all.length - 1;
+  const index = clampStep(raw, all.length);
+  const position = all[index] ?? { step: 0, beat: 0 };
 
-  const goTo = useCallback((i: number) => setRaw(clampStep(i, count)), [count]);
-  const next = useCallback(() => setRaw((i) => clampStep(i + 1, count)), [count]);
-  const prev = useCallback(() => setRaw((i) => clampStep(i - 1, count)), [count]);
+  const goTo = useCallback((step: number) => setRaw(firstIndexOfStep(all, step)), [all]);
+  const next = useCallback(() => setRaw((i) => clampStep(i + 1, all.length)), [all.length]);
+  const prev = useCallback(() => setRaw((i) => clampStep(i - 1, all.length)), [all.length]);
   const first = useCallback(() => setRaw(0), []);
 
   useEffect(() => {
@@ -29,5 +35,16 @@ export function useStepper(count: number) {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [next, prev, first]);
 
-  return { index, count, goTo, next, prev, first };
+  return {
+    index,
+    step: position.step,
+    beat: position.beat,
+    count: stepCount,
+    atStart: index === 0,
+    atEnd: index === last,
+    goTo,
+    next,
+    prev,
+    first,
+  };
 }

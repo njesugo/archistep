@@ -7,7 +7,7 @@ import { StepCaption } from "./components/StepCaption";
 import { frameFor, stageAspect } from "./engine/camera";
 import { parentMap } from "./engine/layout";
 import { resolveFlow } from "./engine/flow";
-import { litIds } from "./engine/state";
+import { litIds, positions, revealedIds } from "./engine/state";
 import { validateSpec } from "./spec/validate";
 import { resolveTheme, THEME_KEY, toggleTheme, type Theme } from "./theme";
 import { useLayout } from "./useLayout";
@@ -27,15 +27,23 @@ const parsed = validateSpec(example);
 if (!parsed.ok) throw new Error(parsed.errors.map((e) => e.message).join("\n"));
 const spec = parsed.spec;
 const parents = parentMap(spec);
+const allPositions = positions(spec);
 
 export default function App() {
   const [theme, setTheme] = useState<Theme>(() =>
     resolveTheme(readStoredTheme(), window.matchMedia("(prefers-color-scheme: dark)").matches),
   );
   const layout = useLayout(spec);
-  const stepper = useStepper(spec.steps.length);
-  const step = spec.steps[stepper.index];
-  const lit = useMemo(() => (step ? litIds(spec, step) : null), [step]);
+  const stepper = useStepper(allPositions, spec.steps.length);
+  const step = spec.steps[stepper.step];
+  const beat = step?.beats?.[stepper.beat];
+  // Option de la spec, modifiable ici le temps de la session.
+  const [progressive, setProgressive] = useState(spec.meta.buildMode === "progressive");
+  const lit = useMemo(() => (step ? litIds(spec, step, beat) : null), [step, beat]);
+  const revealed = useMemo(
+    () => revealedIds(spec, allPositions, stepper.index, progressive),
+    [stepper.index, progressive],
+  );
 
   const reduceMotion = useReducedMotion();
   const layoutReady = layout.status === "ready" ? layout.layout : null;
@@ -78,18 +86,23 @@ export default function App() {
         spec={spec}
         layout={layout}
         lit={lit}
+        revealed={revealed}
         flow={flow}
         frame={frame}
         animateCamera={!reduceMotion}
         aspect={aspect}
       />
       <section className="info">
-        <StepCaption step={step} index={stepper.index} count={stepper.count} />
-        <DataPanels key={step.id} panels={step.panels} />
+        <StepCaption step={step} index={stepper.step} count={stepper.count} beat={stepper.beat} />
+        <DataPanels key={step.id} panels={step.panels} highlight={beat?.highlight} />
       </section>
       <Controls
         steps={spec.steps}
-        index={stepper.index}
+        index={stepper.step}
+        atStart={stepper.atStart}
+        atEnd={stepper.atEnd}
+        progressive={progressive}
+        onToggleProgressive={() => setProgressive((v) => !v)}
         onPrev={stepper.prev}
         onNext={stepper.next}
         onGoTo={stepper.goTo}

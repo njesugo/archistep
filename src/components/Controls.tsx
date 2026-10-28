@@ -3,6 +3,10 @@ import type { Step } from "../spec/schema";
 type Props = {
   steps: Step[];
   index: number;
+  atStart: boolean;
+  atEnd: boolean;
+  progressive: boolean;
+  onToggleProgressive: () => void;
   onPrev: () => void;
   onNext: () => void;
   onGoTo: (index: number) => void;
@@ -13,6 +17,10 @@ type Props = {
 export function Controls({
   steps,
   index,
+  atStart,
+  atEnd,
+  progressive,
+  onToggleProgressive,
   onPrev,
   onNext,
   onGoTo,
@@ -22,15 +30,10 @@ export function Controls({
   return (
     <nav className="ctrl" aria-label="Navigation dans le schéma">
       <div className="grp">
-        <button type="button" onClick={onPrev} disabled={index === 0}>
+        <button type="button" onClick={onPrev} disabled={atStart}>
           Précédent
         </button>
-        <button
-          type="button"
-          className="primary"
-          onClick={onNext}
-          disabled={index === steps.length - 1}
-        >
+        <button type="button" className="primary" onClick={onNext} disabled={atEnd}>
           Suivant
         </button>
       </div>
@@ -49,6 +52,9 @@ export function Controls({
         ))}
       </ol>
       <div className="grp">
+        <button type="button" aria-pressed={progressive} onClick={onToggleProgressive}>
+          Construction progressive
+        </button>
         <button type="button" onClick={onToggleTheme}>
           {themeLabel}
         </button>

@@ -9,6 +9,7 @@ export function Stage({
   spec,
   layout,
   lit,
+  revealed,
   flow,
   frame,
   animateCamera,
@@ -17,6 +18,7 @@ export function Stage({
   spec: Spec;
   layout: LayoutState;
   lit: ReadonlySet<string> | null;
+  revealed: ReadonlySet<string> | null;
   flow: ResolvedFlow | null;
   frame: Frame | undefined;
   animateCamera: boolean;
@@ -30,6 +32,7 @@ export function Stage({
             spec={spec}
             layout={layout.layout}
             lit={lit}
+            revealed={revealed}
             flow={flow}
             frame={frame}
             animateCamera={animateCamera}

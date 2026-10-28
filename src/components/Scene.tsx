@@ -70,7 +70,13 @@ function IconGlyph({
   );
 }
 
-function stateClass(base: string, id: string, lit: ReadonlySet<string> | null): string {
+function stateClass(
+  base: string,
+  id: string,
+  lit: ReadonlySet<string> | null,
+  revealed: ReadonlySet<string> | null,
+): string {
+  if (revealed && !revealed.has(id)) return `${base} hidden`;
   if (!lit) return base;
   return lit.has(id) ? `${base} on` : `${base} dim`;
 }
@@ -79,16 +85,18 @@ function NodeView({
   node,
   rect,
   lit,
+  revealed,
 }: {
   node: SpecNode;
   rect: Rect;
   lit: ReadonlySet<string> | null;
+  revealed: ReadonlySet<string> | null;
 }) {
   const icon = useIcon(node.icon, node.kind);
   const cx = rect.x + rect.width / 2;
   const style = node.layer ? ({ "--c": `var(--${node.layer})` } as CSSProperties) : undefined;
   return (
-    <g className={stateClass("node", node.id, lit)} data-id={node.id} style={style}>
+    <g className={stateClass("node", node.id, lit, revealed)} data-id={node.id} style={style}>
       <rect x={rect.x} y={rect.y} width={rect.width} height={rect.height} rx={14} />
       <IconGlyph icon={icon} x={cx - NODE_ICON / 2} y={rect.y + 12} size={NODE_ICON} />
       <text className="nt" x={cx} y={rect.y + 77} fontSize={node.label.length > 13 ? 14 : 17}>
@@ -107,17 +115,19 @@ function GroupView({
   group,
   rect,
   lit,
+  revealed,
 }: {
   group: SpecGroup;
   rect: GroupRect;
   lit: ReadonlySet<string> | null;
+  revealed: ReadonlySet<string> | null;
 }) {
   const icon = useIcon(group.icon);
   // Pas d'icône générique pour un groupe : sans logo, le titre suffit.
   const hasIcon = hasLogo(group.icon);
   const style = { "--c": `var(--g-${group.color ?? "gray"})` } as CSSProperties;
   return (
-    <g className={stateClass("frame", group.id, lit)} data-id={group.id} style={style}>
+    <g className={stateClass("frame", group.id, lit, revealed)} data-id={group.id} style={style}>
       <rect
         x={rect.x}
         y={rect.y}
@@ -141,6 +151,7 @@ export function Scene({
   spec,
   layout,
   lit = null,
+  revealed = null,
   flow = null,
   frame,
   animateCamera = true,
@@ -149,6 +160,8 @@ export function Scene({
   spec: Spec;
   layout: Layout;
   lit?: ReadonlySet<string> | null;
+  /** Construction progressive : seuls ces ids sont visibles (null : tout l'est). */
+  revealed?: ReadonlySet<string> | null;
   /** Flux animé de l'étape courante ; absent quand le mouvement est réduit. */
   flow?: ResolvedFlow | null;
   /** Cadre visé par la caméra (viewBox) ; par défaut, tout le schéma. */
@@ -193,7 +206,7 @@ export function Scene({
         </marker>
       </defs>
       {groups.map(({ group, rect }) => (
-        <GroupView key={group.id} group={group} rect={rect} lit={lit} />
+        <GroupView key={group.id} group={group} rect={rect} lit={lit} revealed={revealed} />
       ))}
       {flow?.pulse && (
         <rect
@@ -210,7 +223,11 @@ export function Scene({
         if (!points) return null;
         const label = edge.label ? edgeLabelAnchor(points) : null;
         return (
-          <g key={edge.id} className={stateClass("edge-g", edge.id, lit)} data-id={edge.id}>
+          <g
+            key={edge.id}
+            className={stateClass("edge-g", edge.id, lit, revealed)}
+            data-id={edge.id}
+          >
             <path
               className={edge.style === "trigger" ? "edge trigger" : "edge"}
               d={pathFromPoints(points)}
@@ -226,7 +243,9 @@ export function Scene({
       })}
       {spec.nodes.map((node) => {
         const rect = layout.nodes[node.id];
-        return rect ? <NodeView key={node.id} node={node} rect={rect} lit={lit} /> : null;
+        return rect ? (
+          <NodeView key={node.id} node={node} rect={rect} lit={lit} revealed={revealed} />
+        ) : null;
       })}
       {flow && <FlowPackets flow={flow} />}
     </svg>

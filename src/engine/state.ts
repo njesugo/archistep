@@ -1,5 +1,5 @@
 import { parentMap } from "./layout";
-import type { Spec, Step } from "../spec/schema";
+import type { Beat, Spec, Step } from "../spec/schema";
 
 /** Ramène un indice d'étape dans [0, count - 1]. */
 export function clampStep(index: number, count: number): number {
@@ -15,15 +15,17 @@ function ancestorsOf(id: string, parents: Map<string, string>): string[] {
 /**
  * Ids mis en valeur à une étape : ceux de `focus`, plus les groupes ancêtres de chacun
  * (un lien n'a pas de parent : on prend les groupes qui contiennent ses deux extrémités).
- * Renvoie null quand `focus` est vide : rien n'est atténué.
+ * Pendant une sous-étape, son `focus` (s'il existe) remplace celui de l'étape.
+ * Renvoie null quand le focus est vide : rien n'est atténué (c'est la vue d'ensemble).
  */
-export function litIds(spec: Spec, step: Step): Set<string> | null {
-  if (step.focus.length === 0) return null;
+export function litIds(spec: Spec, step: Step, beat?: Beat): Set<string> | null {
+  const focus = beat?.focus ?? step.focus;
+  if (focus.length === 0) return null;
   const parents = parentMap(spec);
   const edges = new Map(spec.edges.map((e) => [e.id, e]));
   const lit = new Set<string>();
 
-  for (const id of step.focus) {
+  for (const id of focus) {
     lit.add(id);
     const edge = edges.get(id);
     if (edge) {
@@ -57,4 +59,43 @@ export function keyAction(key: string, onButton: boolean): StepAction | null {
     default:
       return null;
   }
+}
+
+/** Un état affichable : une étape, et une sous-étape de cette étape (0 si elle n'en a pas). */
+export type Position = { step: number; beat: number };
+
+/** Tous les états dans l'ordre : Suivant et Précédent parcourent cette liste. */
+export function positions(spec: Spec): Position[] {
+  return spec.steps.flatMap((step, s) =>
+    Array.from({ length: Math.max(step.beats?.length ?? 0, 1) }, (_, b) => ({ step: s, beat: b })),
+  );
+}
+
+/** Indice du premier état d'une étape (là où mène une pastille). */
+export function firstIndexOfStep(all: Position[], step: number): number {
+  return Math.max(
+    all.findIndex((p) => p.step === step),
+    0,
+  );
+}
+
+/**
+ * Ids visibles en construction progressive : tout ce qu'un état antérieur ou courant a mis
+ * en valeur. Renvoie null (tout est visible) hors de ce mode, et sur la vue d'ensemble.
+ */
+export function revealedIds(
+  spec: Spec,
+  all: Position[],
+  index: number,
+  progressive: boolean,
+): Set<string> | null {
+  if (!progressive) return null;
+  const at = (p: Position | undefined) => {
+    const step = p ? spec.steps[p.step] : undefined;
+    return step && p ? litIds(spec, step, step.beats?.[p.beat]) : null;
+  };
+  if (at(all[index]) === null) return null;
+  const revealed = new Set<string>();
+  for (const p of all.slice(0, index + 1)) for (const id of at(p) ?? []) revealed.add(id);
+  return revealed;
 }
