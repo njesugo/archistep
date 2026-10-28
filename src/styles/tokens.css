@@ -14,6 +14,9 @@
   --g-orange: #d94a1a;
   --g-purple: #7a4dd6;
   --g-gray: #66758c;
+  --ok: #1b8750;
+  --warn: #a86b0c;
+  --fail: #c62828;
   --logo-pill: transparent;
   --logo-light-display: inline;
   --logo-dark-display: none;
@@ -38,6 +41,9 @@
     --g-orange: #ff7b4b;
     --g-purple: #a98bff;
     --g-gray: #9daabd;
+    --ok: #4ec382;
+    --warn: #e5aa4c;
+    --fail: #ff7b7b;
     --logo-pill: #f3f5f8;
     --logo-light-display: none;
     --logo-dark-display: inline;
@@ -60,6 +66,9 @@
   --g-orange: #ff7b4b;
   --g-purple: #a98bff;
   --g-gray: #9daabd;
+  --ok: #4ec382;
+  --warn: #e5aa4c;
+  --fail: #ff7b7b;
   --logo-pill: #f3f5f8;
   --logo-light-display: none;
   --logo-dark-display: inline;

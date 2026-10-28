@@ -2,7 +2,7 @@
 
 Outil web qui transforme une description d'architecture de données en schéma animé, présenté étape par étape, pour des vidéos pédagogiques. Cahier des charges : [docs/SPEC.md](docs/SPEC.md). Prototype de référence : [docs/reference/prototype.html](docs/reference/prototype.html).
 
-**État : jalon M3 (rendu statique et logos).** La spec JSON est validée, placée avec ELK et dessinée en SVG (groupes, liens, nœuds, logos), en thème clair et sombre. Pas encore de navigation pas à pas.
+**État : jalon M4 (pas à pas).** L'exemple se parcourt étape par étape : mise en valeur, légende et panneaux de données (table, code, liste, DAG). Pas encore d'animation ni de zoom caméra.
 
 **Site déployé :** <https://archistep.netlify.app/>
 
@@ -72,3 +72,9 @@ Les logos se résolvent dans cet ordre : fichier fourni dans `src/assets/logos/`
 `npm run logos:check` indique, pour chaque exemple, d'où vient chaque icône. Dans simple-icons, `youtube`, `databricks` et `airflow` (alias de `apacheairflow`) existent ; `fivetran` et `dbt` n'y sont pas.
 
 Remarque : chaque icône simple-icons est un petit fichier chargé à la demande, ce qui ajoute environ 3 400 fichiers à `dist/`. C'est voulu : n'importe quelle clé reste utilisable sans alourdir le chargement initial.
+
+## Pas à pas
+
+- **Mise en valeur** (`src/engine/state.ts`, `litIds`) : les ids de `focus` sont éclairés, les autres atténués (25 %). Les groupes ancêtres d'un élément éclairé restent visibles ; pour un lien, ce sont les groupes qui contiennent ses deux extrémités. Un `focus` vide n'atténue rien.
+- **Navigation** : boutons Précédent et Suivant, pastilles numérotées (`aria-current="step"` sur l'étape courante), et au clavier : flèche droite ou espace = suivant, flèche gauche = précédent, `0` ou `Début` = première étape. Les touches sont ignorées dans un champ de saisie, et Espace sur un bouton ne l'active qu'une fois.
+- **Panneaux** : une étape affiche tous ses `panels`, dans l'ordre (table, code, liste, DAG).

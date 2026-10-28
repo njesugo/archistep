@@ -60,3 +60,14 @@
   font: 500 13px var(--mono);
   fill: var(--g-teal);
 }
+
+[data-id] {
+  transition: opacity 0.4s;
+}
+.dim {
+  opacity: 0.25;
+}
+.node.on rect {
+  stroke: var(--c, var(--fg));
+  stroke-width: 3;
+}
