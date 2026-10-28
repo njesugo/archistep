@@ -2,7 +2,7 @@
 
 Outil web qui transforme une description d'architecture de données en schéma animé, présenté étape par étape, pour servir de support à des vidéos pédagogiques enregistrées en capture d'écran.
 
-- **Site :** <https://archistep.netlify.app/>
+- **Site :** <https://archistep-six.vercel.app/>
 - **Cahier des charges :** [docs/SPEC.md](docs/SPEC.md) · **Prototype de référence :** [docs/reference/prototype.html](docs/reference/prototype.html)
 - **État :** V1 terminée (jalons M0 à M9). La V2 n'est pas commencée.
 
@@ -54,7 +54,7 @@ Le schéma a été généralisé quand il ne pouvait pas exprimer l'exemple, san
 - tout lien entre un groupe et l'un de ses descendants (pas seulement `trigger`) est dessiné comme une flèche courte au-dessus du groupe contenu ; un tel lien de style `trigger` avec un `flow` fait pulser sa destination ;
 - sans `shape` ni couleur, un flux suit la couche de sa destination (points, carrés, barres) ;
 - un bouton « Construction progressive » remplace `meta.buildMode` le temps de la session ;
-- Node 22 au lieu de 20 (Node 20 n'est plus maintenu) ; six couleurs du thème clair ont été légèrement assombries pour atteindre le contraste AA.
+- hébergement sur Vercel et non Netlify (voir « Déploiement ») ; Node 22 au lieu de 20 (Node 20 n'est plus maintenu) ; six couleurs du thème clair ont été légèrement assombries pour atteindre le contraste AA.
 
 ## Logos
 
@@ -113,19 +113,18 @@ npm run logos:check  # d'où vient chaque logo des exemples
 
 ## Déploiement
 
-Site statique sur Netlify, configuré par [netlify.toml](netlify.toml) : commande `npm test && npm run build`, dossier publié `dist`. Si un test échoue, rien n'est publié. Chaque push sur `main` publie en production ; chaque branche ou pull request a son lien de test (_deploy preview_).
+Site statique hébergé sur **Vercel** (plan Hobby, gratuit), branché sur le dépôt GitHub. Les réglages sont dans [vercel.json](vercel.json) : framework Vite, commande `npm test && npm run build` (si un test échoue, rien n'est publié), dossier publié `dist`. La version de Node (22.x) se règle dans les paramètres du projet Vercel (_Settings > General > Node.js Version_).
 
-### Économiser les crédits Netlify
+- **Production** : chaque push ou fusion sur `main` publie sur <https://archistep-six.vercel.app/>.
+- **Aperçus** : chaque autre branche et chaque pull request a son adresse de test, que Vercel indique dans la pull request. On travaille sur une branche par jalon ou par changement, on regarde son aperçu, puis on fusionne.
+- **Limites du plan Hobby** : 100 déploiements par jour, aperçus compris, et usage personnel non commercial.
 
-Le plan gratuit donne **300 crédits par mois** ; chaque **déploiement de production** (push ou fusion sur `main`) en coûte **15**, soit une vingtaine de mises en production par mois. Les **aperçus de branche sont gratuits**. Crédits épuisés : le site reste en ligne, figé sur la dernière version publiée, jusqu'au mois suivant.
+Connexion du dépôt (déjà faite, une seule fois) : vercel.com > connexion avec GitHub (autoriser seulement le dépôt `archistep`) > **Add New… > Project** > importer le dépôt ; vérifier Framework Preset `Vite`, Output Directory `dist`, Build Command `npm test && npm run build` ; **Deploy** ; puis régler Node.js Version sur `22.x` et vérifier que la branche de production est `main` (_Settings > Git_).
 
-1. Travailler sur une branche par jalon ou par changement ; ne jamais pousser directement sur `main`.
-2. Vérifier chaque branche sur son aperçu Netlify (gratuit) ou en local (`npm run build && npm run preview`).
-3. Fusionner dans `main` seulement pour mettre à jour le site public, en regroupant plusieurs changements.
-4. La consommation se suit dans Netlify, page _Usage_ de l'équipe.
+### Historique : pourquoi pas Netlify
 
-Connexion du dépôt (déjà faite, une seule fois) : Netlify > **Add new site** > **Import an existing project** > **GitHub** > choisir le dépôt ; vérifier branche `main`, build command `npm test && npm run build`, publish directory `dist`, base directory vide ; **Deploy**.
+Le projet a d'abord été déployé sur Netlify (comme le prévoit `docs/SPEC.md`, section 12). Le plan gratuit de Netlify est à crédits (300 par mois, 15 par mise en production) : les crédits ont été épuisés par les mises en production des jalons et les déploiements se sont arrêtés. Le site est donc passé sur Vercel et l'ancien site Netlify est arrêté. Ne pas remettre de `netlify.toml`.
 
 La CI GitHub Actions ([.github/workflows/ci.yml](.github/workflows/ci.yml)) lance lint, format, tests et build sur chaque push et pull request. Elle ne sert que de retour rapide et n'intervient pas dans le déploiement.
 
-`dist/` contient environ 3 400 petits fichiers : un par icône `simple-icons`, chargés à la demande. C'est voulu : n'importe quelle clé d'icône reste utilisable sans alourdir le chargement initial.
+`dist/` contient environ 3 400 petits fichiers : un par icône `simple-icons`, chargés à la demande. C'est voulu : n'importe quelle clé d'icône reste utilisable sans alourdir le chargement initial. Vercel les publie sans difficulté.
