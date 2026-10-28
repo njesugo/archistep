@@ -242,6 +242,7 @@ describe("tiroir Spec", () => {
         onTextChange={noop}
         errors={errors}
         spec={spec}
+        fromLink={false}
         onImport={noop}
         onExport={noop}
         onLoadExample={noop}

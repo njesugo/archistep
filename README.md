@@ -46,6 +46,7 @@ La spec JSON est la source de vérité : nœuds, groupes, liens, étapes, textes
 - **Générer une spec avec un assistant :** dans le tiroir Spec, **Copier le prompt**, colle-le dans un assistant avec ta description (ou une image du schéma), puis colle le JSON obtenu dans l'éditeur.
 - **Validation :** une spec invalide n'est jamais dessinée ; la dernière version valide reste à l'écran. Les erreurs disent quoi corriger (élément, champ, raison) et un clic sur une erreur sélectionne l'endroit fautif dans l'éditeur.
 - **Sauvegarde :** chaque version valide est enregistrée dans le navigateur. **Exporter** télécharge la spec en `.json` ; **Importer** recharge un fichier.
+- **Partager :** **Copier le lien** (dans le tiroir Spec) copie une adresse qui contient toute la spec ; la personne qui l'ouvre voit le même schéma, sans fichier ni compte (voir [Lien de partage](#lien-de-partage)).
 
 ### Écarts avec le cahier des charges
 
