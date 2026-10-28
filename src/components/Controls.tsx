@@ -52,8 +52,13 @@ export function Controls({
         ))}
       </ol>
       <div className="grp">
-        <button type="button" aria-pressed={progressive} onClick={onToggleProgressive}>
-          Construction progressive
+        <button
+          type="button"
+          aria-pressed={progressive}
+          title="Les éléments n’apparaissent qu’au fil des étapes. Sans effet sur la vue d’ensemble, qui montre tout."
+          onClick={onToggleProgressive}
+        >
+          Construction progressive : {progressive ? "oui" : "non"}
         </button>
         <button type="button" onClick={onToggleTheme}>
           {themeLabel}

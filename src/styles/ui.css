@@ -196,6 +196,7 @@ pre {
   min-width: 36px;
 }
 button.primary,
+button[aria-pressed="true"],
 .dots button[aria-current="step"] {
   background: var(--fg);
   color: var(--bg);
