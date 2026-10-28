@@ -1,0 +1,34 @@
+:root {
+  --bg: #f3f5f8;
+  --fg: #131a24;
+  --muted: #586376;
+  --line: #c8cfda;
+  --card: #ffffff;
+  --soft: #eaeef4;
+  --accent: #2d59d6;
+  --display: "Bricolage Grotesque", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1219;
+    --fg: #e7ecf3;
+    --muted: #9ba6b8;
+    --line: #2b3442;
+    --card: #151b24;
+    --soft: #1c2430;
+    --accent: #7197ff;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1219;
+  --fg: #e7ecf3;
+  --muted: #9ba6b8;
+  --line: #2b3442;
+  --card: #151b24;
+  --soft: #1c2430;
+  --accent: #7197ff;
+  color-scheme: dark;
+}

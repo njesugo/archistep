@@ -1,0 +1,419 @@
+<title>Pipeline YouTube Analytics</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Concept : une scène de schéma en haut, la légende de l'étape et l'aperçu de la donnée en dessous, les contrôles en bas. */
+:root{
+  --bg:#F3F5F8; --fg:#131A24; --muted:#586376; --line:#C8CFDA; --card:#FFFFFF; --soft:#EAEEF4;
+  --bronze:#A5622A; --silver:#66758C; --gold:#A87C00;
+  --yt:#D4291F; --fv:#2D59D6; --af:#0B8A8A; --dbt:#D94A1A;
+  --ok:#1B8750; --warn:#A86B0C;
+  --display:'Bricolage Grotesque',system-ui,sans-serif;
+  --body:'IBM Plex Sans',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1219; --fg:#E7ECF3; --muted:#9BA6B8; --line:#2B3442; --card:#151B24; --soft:#1C2430;
+    --bronze:#D98C4F; --silver:#9DAABD; --gold:#E4B93C;
+    --yt:#FF5B4E; --fv:#7197FF; --af:#2FC4C4; --dbt:#FF7B4B;
+    --ok:#4EC382; --warn:#E5AA4C; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D1219; --fg:#E7ECF3; --muted:#9BA6B8; --line:#2B3442; --card:#151B24; --soft:#1C2430;
+  --bronze:#D98C4F; --silver:#9DAABD; --gold:#E4B93C;
+  --yt:#FF5B4E; --fv:#7197FF; --af:#2FC4C4; --dbt:#FF7B4B;
+  --ok:#4EC382; --warn:#E5AA4C; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--bg); color:var(--fg); font-family:var(--body); font-size:15px; line-height:1.55;
+  padding-block:24px 40px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap{max-width:1120px; margin:0 auto; display:flex; flex-direction:column; gap:20px}
+#head{display:flex; flex-direction:column; gap:8px}
+.eyebrow{font:500 12px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin:0}
+h1{font:700 clamp(26px,4.2vw,38px)/1.1 var(--display); letter-spacing:-.01em; margin:0; text-wrap:balance}
+.lede{margin:0; max-width:64ch; color:var(--muted)}
+
+.stage{background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden}
+.scroll{overflow-x:auto}
+svg{display:block; min-width:780px; width:100%; height:auto}
+[data-id]{transition:opacity .4s}
+.dim{opacity:.25}
+.frame rect{fill:none; stroke:var(--line); stroke-width:2; transition:stroke .3s}
+.frame text{font:600 11.5px var(--mono); letter-spacing:.1em; fill:var(--muted); transition:fill .3s}
+.frame.on rect{stroke:var(--c); stroke-width:2.75}
+.frame.on text{fill:var(--c)}
+.node rect{fill:var(--bg); stroke:var(--line); stroke-width:2; transition:stroke .3s}
+.node.on rect{stroke:var(--c); stroke-width:3}
+.nt{font:600 17px var(--body); fill:var(--fg); text-anchor:middle}
+.ns{font:500 11.5px var(--mono); fill:var(--muted); text-anchor:middle; letter-spacing:.03em}
+.ns.c{fill:var(--c)}
+.arrow{fill:none; stroke:var(--muted); stroke-width:2.5}
+.trg{fill:none; stroke:var(--af); stroke-width:2.5; stroke-dasharray:5 5}
+.trgl{font:500 11px var(--mono); fill:var(--af)}
+#pulse{fill:none; stroke:var(--af); stroke-width:3; opacity:0; transform-box:fill-box; transform-origin:center}
+
+.info{display:grid; grid-template-columns:minmax(0,5fr) minmax(0,7fr); gap:20px; align-items:start}
+@media (max-width:820px){.info{grid-template-columns:minmax(0,1fr)}}
+.cap{display:flex; flex-direction:column; gap:10px; min-width:0}
+.count{font:500 12px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--stepc,var(--muted)); margin:0}
+h2{font:700 clamp(22px,3vw,28px)/1.15 var(--display); margin:0; text-wrap:balance}
+#txt{margin:0; max-width:56ch}
+.dag{list-style:none; margin:6px 0 0; padding:0; display:flex; flex-wrap:wrap; gap:6px; align-items:center}
+.dagl{font:500 11px var(--mono); color:var(--muted); letter-spacing:.06em; margin:8px 0 0}
+.task{font:500 12px var(--mono); padding:4px 9px; border-radius:6px; border:1px solid var(--line); background:var(--card); display:flex; gap:7px; align-items:center}
+.task small{font:400 11px var(--body)}
+.task.ok{border-color:var(--ok); color:var(--ok)}
+.task.run{border-color:var(--warn); color:var(--warn); animation:blink 1.3s ease-in-out infinite}
+.task.wait{color:var(--muted)}
+.sep{color:var(--muted); font:500 12px var(--mono)}
+@keyframes blink{50%{opacity:.55}}
+
+.panel{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; min-width:0; display:flex; flex-direction:column; gap:12px}
+.plabel{font:500 12px var(--mono); color:var(--muted); display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:0}
+.chip{font:600 11px var(--mono); letter-spacing:.08em; text-transform:uppercase; color:var(--c); border:1.5px solid var(--c); border-radius:999px; padding:1px 9px}
+.tw{overflow-x:auto}
+table{border-collapse:collapse; width:100%; font:12.5px var(--mono); font-variant-numeric:tabular-nums}
+th{font-weight:500; color:var(--muted); text-align:left; padding:6px 10px; border-bottom:1px solid var(--line); white-space:nowrap}
+td{padding:6px 10px; border-bottom:1px solid var(--soft); white-space:nowrap}
+th.n,td.n{text-align:right}
+tr.flag td{background:var(--soft)}
+td.hl{color:var(--c,var(--bronze)); font-weight:600}
+pre{margin:0; font:12.5px/1.6 var(--mono); background:var(--soft); border-radius:8px; padding:12px 14px; overflow-x:auto}
+.note{margin:0; font-size:13.5px; color:var(--muted)}
+.legend{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px}
+.legend li{display:flex; gap:12px; align-items:baseline; flex-wrap:wrap}
+.facts{margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:10px}
+.facts b{font-weight:600}
+
+.ctrl{display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between}
+.dots{list-style:none; margin:0; padding:0; display:flex; gap:6px; flex-wrap:wrap}
+button{font:500 14px var(--body); color:var(--fg); background:var(--card); border:1px solid var(--line); border-radius:8px; padding:8px 14px; cursor:pointer}
+button:hover{border-color:var(--muted)}
+button:focus-visible{outline:2px solid var(--fv); outline-offset:2px}
+button.primary{background:var(--fg); color:var(--bg); border-color:var(--fg)}
+.dots button{padding:6px 11px; font:500 13px var(--mono); min-width:36px}
+.dots button[aria-current="step"]{background:var(--fg); color:var(--bg); border-color:var(--fg)}
+.grp{display:flex; gap:10px; flex-wrap:wrap}
+#exit{display:none}
+body.rec #head, body.rec .ctrl{display:none}
+body.rec #exit{display:block; position:fixed; top:calc(env(safe-area-inset-top,0px) + 8px); right:max(12px, env(safe-area-inset-right,0px)); opacity:.35}
+body.rec #exit:hover{opacity:1}
+@media (prefers-reduced-motion: reduce){*{transition:none!important; animation:none!important}}
+</style>
+
+<div class="wrap">
+  <header id="head">
+    <p class="eyebrow">Pipeline de données · exemple fictif</p>
+    <h1>De YouTube Analytics au tableau de bord</h1>
+    <p class="lede">Suis le trajet d'une donnée, de l'API jusqu'à la couche prête pour l'analyse. Utilise Suivant, les numéros ou la lecture automatique.</p>
+  </header>
+
+  <section class="stage" aria-label="Schéma animé du pipeline">
+    <div class="scroll">
+<svg id="svg" viewBox="0 0 1200 370" role="img" aria-label="YouTube Analytics vers Fivetran vers Databricks Bronze, puis dbt Silver et Gold orchestrés par Airflow">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1 L9 5 L1 9 z" fill="context-stroke"/></marker>
+  </defs>
+
+  <g class="frame" data-id="af" style="--c:var(--af)">
+    <rect x="765" y="50" width="425" height="285" rx="20"/>
+    <text x="787" y="82">APACHE AIRFLOW · ORCHESTRATION</text>
+  </g>
+  <g class="frame" data-id="dbt" style="--c:var(--dbt)">
+    <rect x="788" y="108" width="388" height="200" rx="16"/>
+    <text x="808" y="136">DBT · TRANSFORMATION</text>
+  </g>
+  <g class="frame" data-id="ing" style="--c:var(--fv)">
+    <rect x="20" y="128" width="640" height="194" rx="20"/>
+    <text x="42" y="158">INGESTION</text>
+  </g>
+
+  <path class="arrow" data-id="a1" id="a1" d="M196 225 H259" marker-end="url(#ah)"/>
+  <path class="arrow" data-id="a2" id="a2" d="M411 225 H474" marker-end="url(#ah)"/>
+  <path class="arrow" data-id="a3" id="a3" d="M626 225 H812" marker-end="url(#ah)"/>
+  <path class="arrow" data-id="a4" id="a4" d="M962 225 H1000" marker-end="url(#ah)"/>
+
+  <g class="node" data-id="yt" style="--c:var(--yt)">
+    <rect x="50" y="170" width="140" height="110" rx="14"/>
+    <g transform="translate(120,205)">
+      <rect x="-18" y="-12" width="36" height="24" rx="7" fill="var(--yt)"/>
+      <polygon points="-4,-6 8,0 -4,6" fill="#fff"/>
+    </g>
+    <text class="nt" x="120" y="247">YouTube</text>
+    <text class="ns" x="120" y="268">Analytics · API</text>
+  </g>
+  <g class="node" data-id="fv" style="--c:var(--fv)">
+    <rect x="265" y="170" width="140" height="110" rx="14"/>
+    <g transform="translate(335,205)" fill="none" stroke="var(--fv)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M-14 -8 l8 8 l-8 8 M-2 -8 l8 8 l-8 8 M10 -8 l8 8 l-8 8"/>
+    </g>
+    <text class="nt" x="335" y="247">Fivetran</text>
+    <text class="ns" x="335" y="268">connecteur géré</text>
+  </g>
+  <g class="node" data-id="br" style="--c:var(--bronze)">
+    <rect x="480" y="170" width="140" height="110" rx="14"/>
+    <g transform="translate(550,200)" fill="var(--bronze)">
+      <path d="M0 -14 L18 -6 L0 2 L-18 -6z" transform="translate(0,10)" opacity=".35"/>
+      <path d="M0 -14 L18 -6 L0 2 L-18 -6z" transform="translate(0,5)" opacity=".65"/>
+      <path d="M0 -14 L18 -6 L0 2 L-18 -6z"/>
+    </g>
+    <text class="nt" x="550" y="247">Databricks</text>
+    <text class="ns c" x="550" y="268">BRONZE · brut</text>
+  </g>
+  <g class="node" data-id="sv" style="--c:var(--silver)">
+    <rect x="818" y="170" width="140" height="110" rx="14"/>
+    <g transform="translate(888,200)" fill="var(--silver)">
+      <path d="M0 -14 L18 -6 L0 2 L-18 -6z" transform="translate(0,10)" opacity=".35"/>
+      <path d="M0 -14 L18 -6 L0 2 L-18 -6z" transform="translate(0,5)" opacity=".65"/>
+      <path d="M0 -14 L18 -6 L0 2 L-18 -6z"/>
+    </g>
+    <text class="nt" x="888" y="247">Databricks</text>
+    <text class="ns c" x="888" y="268">SILVER · nettoyé</text>
+  </g>
+  <g class="node" data-id="gd" style="--c:var(--gold)">
+    <rect x="1006" y="170" width="140" height="110" rx="14"/>
+    <g transform="translate(1076,200)" fill="var(--gold)">
+      <path d="M0 -14 L18 -6 L0 2 L-18 -6z" transform="translate(0,10)" opacity=".35"/>
+      <path d="M0 -14 L18 -6 L0 2 L-18 -6z" transform="translate(0,5)" opacity=".65"/>
+      <path d="M0 -14 L18 -6 L0 2 L-18 -6z"/>
+    </g>
+    <text class="nt" x="1076" y="247">Databricks</text>
+    <text class="ns c" x="1076" y="268">GOLD · agrégé</text>
+  </g>
+
+  <g data-id="trg">
+    <path class="trg" id="trg" d="M1100 60 V104" marker-end="url(#ah)" style="color:var(--af)"/>
+    <text class="trgl" x="1110" y="88">déclenche</text>
+  </g>
+  <rect id="pulse" x="788" y="108" width="388" height="200" rx="16"/>
+  <g id="pk"></g>
+</svg>
+    </div>
+  </section>
+
+  <section class="info" aria-live="polite">
+    <div class="cap" id="cap">
+      <p class="count" id="count"></p>
+      <h2 id="ttl"></h2>
+      <p id="txt"></p>
+      <div id="dagbox" hidden>
+        <p class="dagl">DAG youtube_analytics_quotidien · exemple</p>
+        <ol class="dag" id="dag"></ol>
+      </div>
+    </div>
+    <div class="panel" id="panel"></div>
+  </section>
+
+  <nav class="ctrl" aria-label="Navigation dans le schéma">
+    <div class="grp">
+      <button id="prev" type="button">Précédent</button>
+      <button id="next" type="button" class="primary">Suivant</button>
+    </div>
+    <ol class="dots" id="dots"></ol>
+    <div class="grp">
+      <button id="play" type="button">Lecture auto</button>
+      <button id="rec" type="button">Mode vidéo</button>
+    </div>
+  </nav>
+</div>
+<button id="exit" type="button">Quitter le mode vidéo</button>
+
+<script>
+(function(){
+  var NS='http://www.w3.org/2000/svg';
+  function $(s){return document.querySelector(s);}
+  var svg=$('#svg'), pk=$('#pk'), pulse=$('#pulse');
+  var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var ALL=['ing','yt','fv','br','af','dbt','sv','gd','a1','a2','a3','a4','trg'];
+  var N=' ';
+
+  var json='{\n  "channel_id": "UC_demo",\n  "day": "2026-10-27",\n  "views": 1284,\n  "estimatedMinutesWatched": 3912\n}';
+  var fvrow='  channel_id               "UC_demo"\n  day                      "2026-10-27"\n  views                    1284\n  estimatedMinutesWatched  3912\n+ _fivetran_synced         2026-10-28 02:00\n+ _fivetran_deleted        false';
+  var sqlSilver='select\n  cast(day as date)        as day,\n  channel_id,\n  views,\n  estimatedMinutesWatched  as minutes_watched\nfrom bronze.youtube_stats\nqualify row_number() over (\n  partition by day, channel_id\n  order by _fivetran_synced desc) = 1';
+  var sqlGold='select\n  date_trunc(\'week\', day)  as semaine,\n  channel_id,\n  sum(views)               as vues,\n  sum(minutes_watched)     as minutes_visionnees,\n  round(sum(minutes_watched) / sum(views), 1) as minutes_par_vue\nfrom silver.youtube_stats\ngroup by 1, 2';
+
+  function chip(label,v){return '<span class="chip" style="--c:var('+v+')">'+label+'</span>';}
+  function table(head,rows,flags,nums,hlcol,color){
+    var h='<table><thead><tr>'+head.map(function(t,i){return '<th'+(nums.indexOf(i)>-1?' class="n"':'')+'>'+t+'</th>';}).join('')+'</tr></thead><tbody>';
+    rows.forEach(function(r,ri){
+      h+='<tr'+(flags.indexOf(ri)>-1?' class="flag"':'')+'>'+r.map(function(c,i){
+        var cl=[]; if(nums.indexOf(i)>-1)cl.push('n'); if(hlcol.indexOf(i)>-1)cl.push('hl');
+        return '<td'+(cl.length?' class="'+cl.join(' ')+'"':'')+(color?' style="--c:var('+color+')"':'')+'>'+c+'</td>';
+      }).join('')+'</tr>';
+    });
+    return '<div class="tw">'+h+'</tbody></table></div>';
+  }
+
+  var STEPS=[
+    {t:'Vue d’ensemble', c:'--muted',
+     x:'Une donnée part de YouTube Analytics, passe par Fivetran, arrive brute dans Databricks, puis dbt la nettoie et l’agrège pendant qu’Airflow supervise le tout. Appuie sur Suivant pour la suivre pas à pas.',
+     a:ALL,
+     p:'<p class="plabel">Les trois couches de Databricks</p><ul class="legend">'+
+       '<li>'+chip('Bronze','--bronze')+'<span>brut, tel que reçu de la source</span></li>'+
+       '<li>'+chip('Silver','--silver')+'<span>nettoyé, typé, sans doublon</span></li>'+
+       '<li>'+chip('Gold','--gold')+'<span>agrégé en indicateurs, prêt pour l’analyse</span></li></ul>'+
+       '<p class="note">Toutes les données affichées ici sont fictives.</p>'},
+    {t:'La source', c:'--yt',
+     x:'YouTube Analytics expose les statistiques de la chaîne (vues, minutes regardées, abonnés) à travers une API. Les chiffres sont à jour, mais dans un format pensé pour les machines, pas pour l’analyse.',
+     a:['yt'],
+     p:'<p class="plabel">Réponse de l’API · exemple fictif</p><pre>'+json+'</pre>'},
+    {t:'L’ingestion', c:'--fv',
+     x:'Fivetran est un connecteur géré. Il interroge l’API à intervalle régulier et copie les données vers Databricks, sans code à écrire. Il ajoute ses propres colonnes pour savoir quand chaque ligne est arrivée.',
+     a:['ing','yt','a1','fv'], f:{path:'a1',color:'--fv',shape:'dot',n:4,dur:1800},
+     p:'<p class="plabel">La même ligne après le passage de Fivetran</p><pre>'+fvrow+'</pre><p class="note">Les lignes marquées + sont ajoutées par le connecteur.</p>'},
+    {t:'La couche Bronze', c:'--bronze',
+     x:'Les données arrivent telles quelles, sans correction. On les garde brutes pour pouvoir tout rejouer si une règle change plus tard. Regarde ce qui n’est pas encore propre : la même journée apparaît deux fois, car la valeur est révisée après coup.',
+     a:['ing','fv','a2','br'], f:{path:'a2',color:'--bronze',shape:'dot',n:4,dur:1800},
+     p:'<p class="plabel">'+chip('Bronze','--bronze')+' bronze.youtube_stats</p>'+
+       table(['day','channel_id','views','estimatedMinutesWatched','_fivetran_synced'],[
+         ['2026-10-27 00:00:00','UC_demo','1'+N+'270','3'+N+'880','2026-10-27 22:00'],
+         ['2026-10-27 00:00:00','UC_demo','1'+N+'284','3'+N+'912','2026-10-28 02:00'],
+         ['2026-10-26 00:00:00','UC_demo','1'+N+'190','3'+N+'405','2026-10-27 02:00'],
+         ['2026-10-25 00:00:00','UC_demo','1'+N+'047','3'+N+'120','2026-10-26 02:00']],[0,1],[2,3],[],'')+
+       '<p class="note">Lignes grisées : doublon sur la journée du 27 octobre.</p>'},
+    {t:'L’orchestration', c:'--af',
+     x:'Airflow est le chef d’orchestre. Quand l’ingestion est terminée, il déclenche dbt, tâche après tâche, dans le bon ordre.',
+     a:['af','dbt','trg'], f:{path:'trg',color:'--af',shape:'dot',n:2,dur:1400}, pulse:true, dag:['ok','wait','wait','wait'],
+     p:'<p class="plabel">Ce qu’Airflow apporte</p><ul class="facts">'+
+       '<li><b>Ordre.</b> Chaque tâche attend que la précédente ait réussi.</li>'+
+       '<li><b>Reprise.</b> Si une tâche échoue, Airflow peut la relancer sans refaire tout le reste.</li>'+
+       '<li><b>Planification.</b> Le DAG s’exécute tout seul, par exemple chaque nuit, et garde l’historique de chaque exécution.</li></ul>'},
+    {t:'La couche Silver', c:'--silver',
+     x:'dbt lit la couche Bronze et applique des requêtes SQL : le doublon disparaît en gardant la synchronisation la plus récente, les colonnes sont renommées, la date est convertie. La donnée devient fiable.',
+     a:['af','dbt','br','a3','sv'], f:{path:'a3',color:'--silver',shape:'sq',n:4,dur:2400}, dag:['ok','run','wait','wait'],
+     p:'<p class="plabel">'+chip('Silver','--silver')+' silver.youtube_stats</p>'+
+       table(['day (DATE)','channel_id','views','minutes_watched'],[
+         ['2026-10-27','UC_demo','1'+N+'284','3'+N+'912'],
+         ['2026-10-26','UC_demo','1'+N+'190','3'+N+'405'],
+         ['2026-10-25','UC_demo','1'+N+'047','3'+N+'120']],[],[2,3],[0],'--silver')+
+       '<pre>'+sqlSilver+'</pre>'},
+    {t:'La couche Gold', c:'--gold',
+     x:'Toujours avec dbt, on agrège les données propres en indicateurs métier : ici les vues et le temps de visionnage par semaine. Les tableaux de bord lisent cette couche. Des tests dbt vérifient la qualité avant de valider.',
+     a:['af','dbt','sv','a4','gd'], f:{path:'a4',color:'--gold',shape:'bar',n:3,dur:1400}, dag:['ok','ok','run','wait'],
+     p:'<p class="plabel">'+chip('Gold','--gold')+' gold.youtube_stats_hebdo</p>'+
+       table(['semaine','channel_id','vues','minutes_visionnees','minutes_par_vue'],[
+         ['2026-10-26 (en cours)','UC_demo','2'+N+'474','7'+N+'317','3,0'],
+         ['2026-10-19','UC_demo','8'+N+'214','23'+N+'400','2,8'],
+         ['2026-10-12','UC_demo','7'+N+'410','22'+N+'400','3,0']],[],[2,3,4],[4],'--gold')+
+       '<pre>'+sqlGold+'</pre>'}
+  ];
+  var DUR=[4200,5200,6800,8000,7000,8200,9500];
+  var DAGN=['sync_fivetran','dbt_run_silver','dbt_run_gold','dbt_test'];
+  var DAGS={ok:'succès',run:'en cours',wait:'en attente'};
+
+  var step=0, playing=false, rec=false, timer=null, raf=0, pulseAnim=null;
+
+  // pastilles de navigation
+  var dots=$('#dots');
+  ['Tout',1,2,3,4,5,6].forEach(function(l,i){
+    var li=document.createElement('li'), b=document.createElement('button');
+    b.type='button'; b.textContent=l; b.setAttribute('aria-label', i===0?'Vue d’ensemble':'Étape '+i+' : '+STEPS[i].t);
+    b.addEventListener('click',function(){setStep(i);});
+    li.appendChild(b); dots.appendChild(li);
+  });
+
+  function stopFlow(){
+    cancelAnimationFrame(raf); pk.innerHTML='';
+    if(pulseAnim){pulseAnim.cancel(); pulseAnim=null;} pulse.style.opacity=0;
+  }
+  function mk(f,i){
+    var e;
+    if(f.shape==='dot'){e=document.createElementNS(NS,'circle'); e.setAttribute('r',[5,7,4,6][i%4]);}
+    else{e=document.createElementNS(NS,'rect'); var w=f.shape==='sq'?11:22, h=f.shape==='sq'?11:9;
+      e.setAttribute('x',-w/2); e.setAttribute('y',-h/2); e.setAttribute('width',w); e.setAttribute('height',h); e.setAttribute('rx',f.shape==='sq'?2.5:4);}
+    e.setAttribute('fill','var('+f.color+')'); e.style.opacity=0; return e;
+  }
+  function ease(t){return t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;}
+  function launch(f){
+    if(reduce||!f) return;
+    var path=document.getElementById(f.path), L=path.getTotalLength();
+    var gap=260, cycle=f.dur+700+f.n*gap, t0=performance.now();
+    var items=[]; for(var i=0;i<f.n;i++){var e=mk(f,i); pk.appendChild(e); items.push({e:e,d:i*gap});}
+    (function tick(now){
+      items.forEach(function(it){
+        var loc=now-t0-it.d;
+        if(loc<0){it.e.style.opacity=0; return;}
+        var m=loc%cycle;
+        if(m>f.dur){it.e.style.opacity=0; return;}
+        var t=m/f.dur, p=path.getPointAtLength(L*ease(t));
+        it.e.setAttribute('transform','translate('+p.x+','+p.y+')');
+        it.e.style.opacity=Math.min(1,t*8,(1-t)*8);
+      });
+      raf=requestAnimationFrame(tick);
+    })(t0);
+  }
+
+  function renderDag(states){
+    var box=$('#dagbox');
+    if(!states){box.hidden=true; return;}
+    box.hidden=false;
+    var h='';
+    DAGN.forEach(function(n,i){
+      h+='<li class="task '+states[i]+'">'+n+'<small>'+DAGS[states[i]]+'</small></li>';
+      if(i<3) h+='<li class="sep" aria-hidden="true">›</li>';
+    });
+    $('#dag').innerHTML=h;
+  }
+
+  function setStep(i){
+    step=i; var s=STEPS[i];
+    stopFlow();
+    var overview=(i===0);
+    svg.querySelectorAll('[data-id]').forEach(function(el){
+      var on=s.a.indexOf(el.getAttribute('data-id'))>-1;
+      el.classList.toggle('dim',!overview&&!on);
+      el.classList.toggle('on',!overview&&on);
+    });
+    $('#cap').style.setProperty('--stepc','var('+s.c+')');
+    $('#count').textContent=overview?'Vue d’ensemble':'Étape '+i+' sur 6';
+    $('#ttl').textContent=s.t; $('#txt').textContent=s.x;
+    renderDag(s.dag?s.dag:null);
+    var panel=$('#panel'); panel.innerHTML=s.p;
+    if(!reduce&&panel.animate){panel.animate([{opacity:0,transform:'translateY(6px)'},{opacity:1,transform:'none'}],{duration:320,easing:'ease-out'});}
+    dots.querySelectorAll('button').forEach(function(b,k){ if(k===i)b.setAttribute('aria-current','step'); else b.removeAttribute('aria-current'); });
+    $('#prev').disabled=(i===0); $('#next').disabled=(i===6);
+    $('#prev').style.opacity=(i===0)?.45:1; $('#next').style.opacity=(i===6)?.45:1;
+    launch(s.f);
+    if(s.pulse&&!reduce&&pulse.animate){
+      pulseAnim=pulse.animate([{transform:'scale(1)',opacity:.8},{transform:'scale(1.05,1.12)',opacity:0}],{duration:1500,iterations:Infinity,easing:'ease-out'});
+    }
+    sched();
+  }
+
+  function sched(){
+    clearTimeout(timer);
+    if(!playing) return;
+    timer=setTimeout(function(){ setStep(step>=6?0:step+1); }, DUR[step]);
+  }
+  function setPlaying(v){
+    playing=v; $('#play').textContent=v?'Pause':'Lecture auto'; sched();
+  }
+
+  $('#prev').addEventListener('click',function(){ if(step>0) setStep(step-1); });
+  $('#next').addEventListener('click',function(){ if(step<6) setStep(step+1); });
+  $('#play').addEventListener('click',function(){ setPlaying(!playing); });
+  $('#rec').addEventListener('click',function(){
+    rec=true; document.body.classList.add('rec'); window.scrollTo(0,0);
+    playing=true; $('#play').textContent='Pause'; setStep(0);
+  });
+  function leaveRec(){
+    if(!rec) return; rec=false; document.body.classList.remove('rec'); setPlaying(false);
+  }
+  $('#exit').addEventListener('click',leaveRec);
+  document.addEventListener('keydown',function(e){
+    if(e.key==='ArrowRight'&&step<6) setStep(step+1);
+    else if(e.key==='ArrowLeft'&&step>0) setStep(step-1);
+    else if(e.key==='Escape') leaveRec();
+  });
+
+  setStep(0);
+})();
+</script>
