@@ -1,4 +1,11 @@
 import type { CSSProperties } from "react";
+import {
+  cellHighlighted,
+  hasCodeHighlight,
+  hasTableHighlight,
+  lineHighlighted,
+  type Highlight,
+} from "../engine/highlight";
 import type { Panel } from "../spec/schema";
 
 const TASK_STATES = { ok: "succès", run: "en cours", wait: "en attente", fail: "échec" } as const;
@@ -19,7 +26,7 @@ function Title({ panel }: { panel: Panel }) {
   );
 }
 
-function Body({ panel }: { panel: Panel }) {
+function Body({ panel, highlight }: { panel: Panel; highlight: Highlight | undefined }) {
   switch (panel.type) {
     case "table": {
       const numeric = new Set(panel.numericColumns);
@@ -41,7 +48,14 @@ function Body({ panel }: { panel: Panel }) {
                 {panel.rows.map((row, r) => (
                   <tr key={r}>
                     {row.map((cell, c) => (
-                      <td key={c} className={numeric.has(c) ? "n" : undefined}>
+                      <td
+                        key={c}
+                        className={
+                          [numeric.has(c) ? "n" : "", cellHighlighted(highlight, r, c) ? "hl" : ""]
+                            .filter(Boolean)
+                            .join(" ") || undefined
+                        }
+                      >
                         {cell}
                       </td>
                     ))}
@@ -58,7 +72,13 @@ function Body({ panel }: { panel: Panel }) {
       return (
         <>
           <pre data-language={panel.language}>
-            <code>{panel.content}</code>
+            <code>
+              {panel.content.split("\n").map((line, i) => (
+                <span key={i} className={lineHighlighted(highlight, i) ? "line hl" : "line"}>
+                  {line || " "}
+                </span>
+              ))}
+            </code>
           </pre>
           {panel.note && <p className="note">{panel.note}</p>}
         </>
@@ -94,16 +114,33 @@ function Body({ panel }: { panel: Panel }) {
   }
 }
 
-export function DataPanels({ panels }: { panels: Panel[] | undefined }) {
+/**
+ * `highlight` (d'une sous-étape) vise le panneau `highlight.panel` (0 par défaut) ;
+ * les autres panneaux restent inchangés.
+ */
+export function DataPanels({
+  panels,
+  highlight,
+}: {
+  panels: Panel[] | undefined;
+  highlight?: Highlight;
+}) {
   if (!panels?.length) return null;
+  const target = highlight?.panel ?? 0;
   return (
     <div className="panels">
-      {panels.map((panel, i) => (
-        <section key={i} className="panel" aria-label={panel.title}>
-          <Title panel={panel} />
-          <Body panel={panel} />
-        </section>
-      ))}
+      {panels.map((panel, i) => {
+        const hl = i === target ? highlight : undefined;
+        const active =
+          (panel.type === "table" && hasTableHighlight(hl)) ||
+          (panel.type === "code" && hasCodeHighlight(hl));
+        return (
+          <section key={i} className={active ? "panel has-hl" : "panel"} aria-label={panel.title}>
+            <Title panel={panel} />
+            <Body panel={panel} highlight={hl} />
+          </section>
+        );
+      })}
     </div>
   );
 }

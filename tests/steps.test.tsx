@@ -79,6 +79,10 @@ describe("Controls", () => {
       <Controls
         steps={spec.steps}
         index={index}
+        atStart={index === 0}
+        atEnd={index === spec.steps.length - 1}
+        progressive={false}
+        onToggleProgressive={() => {}}
         onPrev={() => {}}
         onNext={() => {}}
         onGoTo={() => {}}

@@ -102,7 +102,7 @@
       "id": "apercu",
       "title": "Vue d’ensemble",
       "text": "Une donnée part de YouTube Analytics, passe par Fivetran, arrive brute dans Databricks, puis dbt la nettoie et l’agrège pendant qu’Airflow supervise le tout. Appuie sur Suivant pour la suivre pas à pas.",
-      "focus": ["ing", "dbt", "af", "yt", "fv", "br", "sv", "gd", "e1", "e2", "e3", "e4", "t1"],
+      "focus": [],
       "panels": [
         {
           "type": "list",
@@ -167,7 +167,7 @@
     {
       "id": "bronze",
       "title": "La couche Bronze",
-      "text": "Les données arrivent telles quelles, sans correction. On les garde brutes pour pouvoir tout rejouer si une règle change plus tard. Regarde ce qui n’est pas encore propre : la même journée apparaît deux fois, car la valeur est révisée après coup.",
+      "text": "Les données arrivent telles quelles, sans correction. On les garde brutes pour pouvoir tout rejouer si une règle change plus tard.",
       "focus": ["ing", "fv", "e2", "br"],
       "zoom": ["fv", "br"],
       "flow": {
@@ -189,6 +189,26 @@
           ],
           "numericColumns": [2, 3],
           "note": "Les deux premières lignes sont un doublon sur la journée du 27 octobre."
+        }
+      ],
+      "beats": [
+        {
+          "focus": ["fv", "e2", "br"]
+        },
+        {
+          "focus": ["br"],
+          "text": "Regarde ce qui n’est pas encore propre : la journée du 27 octobre apparaît deux fois, car la valeur est révisée après coup.",
+          "highlight": {
+            "rows": [0, 1]
+          }
+        },
+        {
+          "focus": ["br"],
+          "text": "Seule l’heure de synchronisation distingue les deux versions. À l’étape suivante, on gardera la plus récente.",
+          "highlight": {
+            "rows": [0, 1],
+            "cols": [4]
+          }
         }
       ]
     },
@@ -297,6 +317,23 @@
               "state": "wait"
             }
           ]
+        }
+      ],
+      "beats": [
+        {},
+        {
+          "text": "Cette fenêtre numérote les lignes de chaque journée, de la synchronisation la plus récente à la plus ancienne, et ne garde que la première : le doublon disparaît.",
+          "highlight": {
+            "panel": 1,
+            "lines": [6, 7, 8]
+          }
+        },
+        {
+          "text": "Résultat : une seule ligne par journée, avec la valeur révisée (1 284 vues le 27 octobre), les colonnes renommées et la date convertie.",
+          "highlight": {
+            "panel": 0,
+            "rows": [0]
+          }
         }
       ]
     },

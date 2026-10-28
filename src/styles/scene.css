@@ -94,3 +94,8 @@
     transform: scale(1.05, 1.12);
   }
 }
+
+.hidden {
+  opacity: 0;
+  pointer-events: none;
+}

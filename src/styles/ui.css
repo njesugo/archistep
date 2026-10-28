@@ -211,3 +211,22 @@ button:disabled {
     animation: none !important;
   }
 }
+
+.beat-count {
+  opacity: 0.8;
+}
+.line {
+  display: block;
+}
+.has-hl td:not(.hl),
+.has-hl .line:not(.hl) {
+  opacity: 0.4;
+}
+td.hl,
+.line.hl {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  font-weight: 600;
+}
+td.hl {
+  color: var(--fg);
+}
