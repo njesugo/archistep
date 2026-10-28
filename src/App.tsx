@@ -334,6 +334,7 @@ export default function App() {
           lit={lit}
           revealed={revealed}
           flows={flows}
+          tintEnds={animating}
           frame={cameraFrame}
           animateCamera={cameraSmooth}
           aspect={aspect}

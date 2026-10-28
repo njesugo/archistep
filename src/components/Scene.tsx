@@ -107,16 +107,22 @@ function NodeView({
   rect,
   lit,
   revealed,
+  tint,
 }: {
   node: SpecNode;
   rect: Rect;
   lit: ReadonlySet<string> | null;
   revealed: ReadonlySet<string> | null;
+  /** Variable CSS de couleur du flux en cours dont cette brique est une extrémité. */
+  tint?: string;
 }) {
   const icon = useIcon(node.icon, node.kind);
   const iconBox = useIconBox(icon, NODE_ICON_MAX_W, NODE_ICON_H);
   const cx = rect.x + rect.width / 2;
-  const style = node.layer ? ({ "--c": `var(--${node.layer})` } as CSSProperties) : undefined;
+  const style = {
+    ...(node.layer ? { "--c": `var(--${node.layer})` } : {}),
+    ...(tint ? { "--tint": `var(${tint})` } : {}),
+  } as CSSProperties;
   // Un nom long passe à une taille plus petite, puis sur deux lignes, puis est tronqué ;
   // le texte complet reste disponible en infobulle (et pour les lecteurs d'écran).
   const textWidth = rect.width - 2 * NODE_TEXT_PAD;
@@ -130,7 +136,11 @@ function NodeView({
   const sub = node.sub ? truncate(node.sub, textWidth, SUB_SIZE, MONO_STYLE) : undefined;
   const cut = label.truncated || (node.sub !== undefined && sub !== node.sub);
   return (
-    <g className={stateClass("node", node.id, lit, revealed)} data-id={node.id} style={style}>
+    <g
+      className={stateClass("node", node.id, lit, revealed) + (tint ? " tinted" : "")}
+      data-id={node.id}
+      style={style}
+    >
       <rect x={rect.x} y={rect.y} width={rect.width} height={rect.height} rx={14} />
       <IconGlyph
         icon={icon}
@@ -220,6 +230,7 @@ export function Scene({
   lit = null,
   revealed = null,
   flows = [],
+  tintEnds = false,
   frame,
   animateCamera = true,
   aspect,
@@ -231,6 +242,8 @@ export function Scene({
   revealed?: ReadonlySet<string> | null;
   /** Flux animés ; vide quand le mouvement est réduit. */
   flows?: ResolvedFlow[];
+  /** Fond teinté, de la couleur du flux, sur les briques qui en sont les extrémités. */
+  tintEnds?: boolean;
   /** Cadre visé par la caméra (viewBox) ; par défaut, tout le schéma. */
   frame?: Frame;
   /** Faux : le cadre change sans déplacement progressif (mouvement réduit). */
@@ -241,6 +254,14 @@ export function Scene({
   const svg = useRef<SVGSVGElement>(null);
   const full: Frame = { x: 0, y: 0, width: layout.width, height: layout.height };
   useCamera(svg, frame ?? full, animateCamera);
+
+  const tints = new Map<string, string>();
+  if (tintEnds) {
+    for (const flow of flows) {
+      tints.set(flow.from, flow.color);
+      tints.set(flow.to, flow.color);
+    }
+  }
 
   // Ordre de dessin : groupes (du plus extérieur au plus intérieur), liens, nœuds.
   const groups = spec.groups
@@ -328,7 +349,14 @@ export function Scene({
       {spec.nodes.map((node) => {
         const rect = layout.nodes[node.id];
         return rect ? (
-          <NodeView key={node.id} node={node} rect={rect} lit={lit} revealed={revealed} />
+          <NodeView
+            key={node.id}
+            node={node}
+            rect={rect}
+            lit={lit}
+            revealed={revealed}
+            tint={tints.get(node.id)}
+          />
         ) : null;
       })}
       {/* Étiquettes au-dessus des nœuds et des cadres, avec un halo : jamais cachées ni barrées. */}

@@ -8,6 +8,9 @@ export type PacketShape = "dot" | "square" | "bar";
 /** Flux prêt à dessiner pour l'étape courante. */
 export type ResolvedFlow = {
   edgeId: string;
+  /** Extrémités du lien (ids de nœuds ou de groupes). */
+  from: string;
+  to: string;
   points: Point[];
   shape: PacketShape;
   count: number;
@@ -50,6 +53,8 @@ export function resolveFlow(spec: Spec, step: Step, layout: Layout): ResolvedFlo
 
   return {
     edgeId: edge.id,
+    from: edge.from,
+    to: edge.to,
     points,
     shape: step.flow.shape ?? (toLayer ? LAYER_SHAPE[toLayer] : undefined) ?? "dot",
     count: step.flow.count ?? DEFAULT_COUNT,
