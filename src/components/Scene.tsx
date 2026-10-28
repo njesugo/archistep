@@ -212,8 +212,7 @@ function GroupView({
 
 /**
  * `lit` : ids mis en valeur à l'étape courante ; les autres sont atténués.
- * Sans `lit` (null), tout est affiché normalement. `flows` font circuler des paquets sur leurs
- * liens ; ceux dont le lien n'est pas mis en valeur sont atténués comme lui.
+ * Sans `lit` (null), tout est affiché normalement. `flows` font circuler des paquets sur leurs liens.
  */
 export function Scene({
   spec,
@@ -300,7 +299,7 @@ export function Scene({
           flow.pulse && (
             <rect
               key={`pulse-${flow.edgeId}`}
-              className={lit && !lit.has(flow.edgeId) ? "pulse dim" : "pulse"}
+              className="pulse"
               x={flow.pulse.x}
               y={flow.pulse.y}
               width={flow.pulse.width}
@@ -371,7 +370,7 @@ export function Scene({
         );
       })}
       {flows.map((flow) => (
-        <FlowPackets key={flow.edgeId} flow={flow} dimmed={lit !== null && !lit.has(flow.edgeId)} />
+        <FlowPackets key={flow.edgeId} flow={flow} />
       ))}
     </svg>
   );

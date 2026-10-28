@@ -1,3 +1,5 @@
+import { resolveFlow, type ResolvedFlow } from "./flow";
+import type { Layout } from "./layout";
 import type { Spec } from "../spec/schema";
 
 /** Durée d'une étape du parcours, avant le facteur de vitesse : de quoi voir le flux passer. */
@@ -19,4 +21,18 @@ export function nextTourIndex(current: number, count: number): number {
 
 export function tourDwellMs(factor: number): number {
   return Math.round(TOUR_STEP_MS * factor);
+}
+
+/**
+ * Flux en mouvement pendant une étape du parcours : celui de cette étape, et lui seul. Les autres
+ * liens restent immobiles, pour qu'un seul flux attire l'œil à la fois. Vide si l'étape n'en a pas.
+ */
+export function tourFlows(
+  spec: Spec,
+  stepIndex: number | undefined,
+  layout: Layout,
+): ResolvedFlow[] {
+  const step = stepIndex === undefined ? undefined : spec.steps[stepIndex];
+  const flow = step ? resolveFlow(spec, step, layout) : null;
+  return flow ? [flow] : [];
 }

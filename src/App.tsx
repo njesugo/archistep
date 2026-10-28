@@ -8,10 +8,10 @@ import { StepCaption } from "./components/StepCaption";
 import { downloadText, slugify } from "./download";
 import { frameFor, minFrameWidth, stageAspect } from "./engine/camera";
 import { parentMap } from "./engine/layout";
-import { resolveAllFlows, resolveFlow } from "./engine/flow";
+import { resolveFlow } from "./engine/flow";
 import { DEFAULT_SPEED, dwellMs, speedFactor } from "./engine/autoplay";
 import { litIds, positions, revealedIds } from "./engine/state";
-import { nextTourIndex, tourDwellMs, tourSteps } from "./engine/tour";
+import { nextTourIndex, tourDwellMs, tourFlows, tourSteps } from "./engine/tour";
 import { resolveTheme, THEME_KEY, toggleTheme, type Theme } from "./theme";
 import { useElementSize } from "./useElementSize";
 import { useFullscreen } from "./useFullscreen";
@@ -163,15 +163,15 @@ export default function App() {
 
   const reduceMotion = useReducedMotion();
   const layoutReady = layout.status === "ready" ? layout.layout : null;
-  // Sans mouvement : ni paquets ni impulsion. En animation continue, tous les flux tournent ;
-  // en plein écran seul, le schéma reste fixe.
+  // Sans mouvement : ni paquets ni impulsion. En animation continue, seul le flux de l'étape
+  // éclairée tourne ; en plein écran seul, le schéma reste fixe.
   const flows = useMemo(() => {
     if (reduceMotion || !layoutReady) return [];
-    if (animating) return resolveAllFlows(spec, layoutReady);
+    if (animating) return tourFlows(spec, tourStepIndex, layoutReady);
     if (fullscreen.active || !step) return [];
     const flow = resolveFlow(spec, step, layoutReady);
     return flow ? [flow] : [];
-  }, [reduceMotion, layoutReady, animating, fullscreen.active, spec, step]);
+  }, [reduceMotion, layoutReady, animating, tourStepIndex, fullscreen.active, spec, step]);
 
   // En plein écran, la scène prend le rapport de l'écran et le schéma s'y ajuste en entier.
   const screenAspect = stageSize.height > 0 ? stageSize.width / stageSize.height : undefined;
