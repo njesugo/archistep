@@ -100,6 +100,29 @@ describe("Controls", () => {
     );
   });
 
+  it("montre l'état de la construction progressive (texte et aria-pressed)", () => {
+    const render = (progressive: boolean) =>
+      renderToStaticMarkup(
+        <Controls
+          steps={spec.steps}
+          index={0}
+          atStart
+          atEnd={false}
+          progressive={progressive}
+          onToggleProgressive={() => {}}
+          onPrev={() => {}}
+          onNext={() => {}}
+          onGoTo={() => {}}
+          themeLabel="Thème sombre"
+          onToggleTheme={() => {}}
+        />,
+      );
+    expect(render(false)).toContain('aria-pressed="false"');
+    expect(render(false)).toContain("Construction progressive : non");
+    expect(render(true)).toContain('aria-pressed="true"');
+    expect(render(true)).toContain("Construction progressive : oui");
+  });
+
   it("désactive Précédent au début et Suivant à la fin", () => {
     expect(render(0)).toMatch(/<button[^>]*disabled[^>]*>Précédent/);
     expect(render(6)).toMatch(/<button[^>]*disabled[^>]*>Suivant/);
