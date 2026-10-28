@@ -4,10 +4,12 @@ import { Controls } from "./components/Controls";
 import { DataPanels } from "./components/DataPanel";
 import { Stage } from "./components/Stage";
 import { StepCaption } from "./components/StepCaption";
+import { resolveFlow } from "./engine/flow";
 import { litIds } from "./engine/state";
 import { validateSpec } from "./spec/validate";
 import { resolveTheme, THEME_KEY, toggleTheme, type Theme } from "./theme";
 import { useLayout } from "./useLayout";
+import { useReducedMotion } from "./useReducedMotion";
 import { useStepper } from "./useStepper";
 
 function readStoredTheme(): string | null {
@@ -32,6 +34,14 @@ export default function App() {
   const step = spec.steps[stepper.index];
   const lit = useMemo(() => (step ? litIds(spec, step) : null), [step]);
 
+  const reduceMotion = useReducedMotion();
+  const layoutReady = layout.status === "ready" ? layout.layout : null;
+  // Sans mouvement : ni paquets ni impulsion.
+  const flow = useMemo(
+    () => (step && layoutReady && !reduceMotion ? resolveFlow(spec, step, layoutReady) : null),
+    [step, layoutReady, reduceMotion],
+  );
+
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
@@ -54,7 +64,7 @@ export default function App() {
         {spec.meta.subtitle && <p className="eyebrow">{spec.meta.subtitle}</p>}
         <h1>{spec.meta.title}</h1>
       </header>
-      <Stage spec={spec} layout={layout} lit={lit} />
+      <Stage spec={spec} layout={layout} lit={lit} flow={flow} />
       <section className="info">
         <StepCaption step={step} index={stepper.index} count={stepper.count} />
         <DataPanels key={step.id} panels={step.panels} />
