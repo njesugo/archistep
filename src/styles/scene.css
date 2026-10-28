@@ -58,6 +58,11 @@
 .edge-label {
   font: 500 13px var(--mono);
   fill: var(--g-teal);
+  /* halo : le texte reste lisible là où une ligne ou un cadre passe derrière */
+  paint-order: stroke;
+  stroke: var(--card);
+  stroke-width: 5px;
+  stroke-linejoin: round;
 }
 
 [data-id] {

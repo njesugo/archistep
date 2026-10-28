@@ -151,7 +151,14 @@ describe("cadre d'une étape", () => {
   });
 
   it("n'agrandit pas à l'excès la vue d'ensemble d'une petite spec", () => {
-    const small: Layout = { width: 300, height: 150, nodes: {}, groups: {}, edges: {} };
+    const small: Layout = {
+      width: 300,
+      height: 150,
+      nodes: {},
+      groups: {},
+      edges: {},
+      edgeLabels: {},
+    };
     const f = frameFor(small, undefined, 2);
     expect(f.width).toBeGreaterThanOrEqual(MIN_FRAME_WIDTH);
     expect(f.x + f.width / 2).toBeCloseTo(150); // centré sur le schéma
@@ -165,6 +172,7 @@ describe("cadre d'une étape", () => {
       nodes: { a: { x: 10, y: 10, width: 50, height: 50 } },
       groups: {},
       edges: {},
+      edgeLabels: {},
     };
     const f = frameFor(small, ["a"], 2);
     expect(f.width).toBeLessThanOrEqual(small.width * 1.5);

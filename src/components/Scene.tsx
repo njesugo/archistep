@@ -8,7 +8,21 @@ import {
   type Layout,
   type Rect,
 } from "../engine/layout";
-import { fitLabel, LABEL_STYLE, MONO_STYLE, truncate } from "../engine/text";
+import {
+  EDGE_LABEL,
+  fitLabel,
+  GROUP_ICON_GAP,
+  GROUP_ICON_LEFT,
+  GROUP_ICON_MAX_W,
+  GROUP_TITLE,
+  GROUP_TITLE_LEFT,
+  GROUP_TITLE_RIGHT,
+  LABEL_STYLE,
+  MONO_STYLE,
+  NODE_TEXT_PAD,
+  SUB_SIZE,
+  truncate,
+} from "../engine/text";
 import { GenericIcon } from "../icons/generic";
 import { FlowPackets } from "./FlowPackets";
 import type { ResolvedFlow } from "../engine/flow";
@@ -22,11 +36,6 @@ import "../styles/scene.css";
 const NODE_ICON_H = 40;
 const NODE_ICON_MAX_W = 108;
 const GROUP_ICON_H = 26;
-const GROUP_ICON_MAX_W = 56;
-/** Marge intérieure d'un nœud, de chaque côté du texte. */
-const NODE_TEXT_PAD = 10;
-/** Titre de groupe : 14 px, mono, majuscules, espacement 0,1 em. */
-const GROUP_TITLE = { size: 14, style: { ...MONO_STYLE, letterSpacing: 0.1 } };
 
 function IconGlyph({
   icon,
@@ -118,7 +127,7 @@ function NodeView({
     style: LABEL_STYLE,
   });
   const twoLines = label.lines.length > 1;
-  const sub = node.sub ? truncate(node.sub, textWidth, 12, MONO_STYLE) : undefined;
+  const sub = node.sub ? truncate(node.sub, textWidth, SUB_SIZE, MONO_STYLE) : undefined;
   const cut = label.truncated || (node.sub !== undefined && sub !== node.sub);
   return (
     <g className={stateClass("node", node.id, lit, revealed)} data-id={node.id} style={style}>
@@ -166,11 +175,12 @@ function GroupView({
   const hasIcon = hasLogo(group.icon);
   const style = { "--c": `var(--g-${group.color ?? "gray"})` } as CSSProperties;
   const iconBox = useIconBox(icon, GROUP_ICON_MAX_W, GROUP_ICON_H);
-  const titleX = rect.x + (hasIcon ? 20 + iconBox.width + 10 : 22);
+  const titleX =
+    rect.x + (hasIcon ? GROUP_ICON_LEFT + iconBox.width + GROUP_ICON_GAP : GROUP_TITLE_LEFT);
   const full = group.label.toUpperCase();
   const title = truncate(
     full,
-    Math.min(rect.x + rect.width - 16, titleLimit) - titleX,
+    Math.min(rect.x + rect.width - GROUP_TITLE_RIGHT, titleLimit) - titleX,
     GROUP_TITLE.size,
     GROUP_TITLE.style,
   );
@@ -297,7 +307,6 @@ export function Scene({
       {spec.edges.map((edge) => {
         const points = layout.edges[edge.id];
         if (!points) return null;
-        const label = edge.label ? edgeLabelAnchor(points) : null;
         return (
           <g
             key={edge.id}
@@ -309,11 +318,6 @@ export function Scene({
               d={pathFromPoints(points)}
               markerEnd="url(#arrowhead)"
             />
-            {label && (
-              <text className="edge-label" x={label.x} y={label.y} textAnchor={label.anchor}>
-                {edge.label}
-              </text>
-            )}
           </g>
         );
       })}
@@ -322,6 +326,44 @@ export function Scene({
         return rect ? (
           <NodeView key={node.id} node={node} rect={rect} lit={lit} revealed={revealed} />
         ) : null;
+      })}
+      {/* Étiquettes au-dessus des nœuds et des cadres, avec un halo : jamais cachées ni barrées. */}
+      {spec.edges.map((edge) => {
+        const points = layout.edges[edge.id];
+        if (!edge.label || !points) return null;
+        const box = layout.edgeLabels[edge.id];
+        const anchor = box ? null : edgeLabelAnchor(points);
+        const lines = box?.lines ?? [edge.label];
+        const lineHeight = EDGE_LABEL.lineHeight;
+        return (
+          <g
+            key={edge.id}
+            className={stateClass("edge-label-g", edge.id, lit, revealed)}
+            data-label-for={edge.id}
+          >
+            {lines.some((line) => line.endsWith("…")) && <title>{edge.label}</title>}
+            <text
+              className="edge-label"
+              textAnchor={box ? "middle" : anchor?.anchor}
+              x={box ? box.x + box.width / 2 : anchor?.x}
+              y={
+                box
+                  ? box.y + (box.height - lines.length * lineHeight) / 2 + lineHeight - 3
+                  : anchor?.y
+              }
+            >
+              {lines.map((line, i) => (
+                <tspan
+                  key={i}
+                  x={box ? box.x + box.width / 2 : anchor?.x}
+                  dy={i === 0 ? 0 : lineHeight}
+                >
+                  {line}
+                </tspan>
+              ))}
+            </text>
+          </g>
+        );
       })}
       {flow && <FlowPackets flow={flow} />}
     </svg>

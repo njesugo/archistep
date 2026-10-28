@@ -1,6 +1,19 @@
 import ELK from "elkjs/lib/elk.bundled.js";
 import type { ElkExtendedEdge, ElkNode } from "elkjs/lib/elk-api";
-import type { Spec } from "../spec/schema";
+import type { Spec, SpecGroup, SpecNode } from "../spec/schema";
+import {
+  edgeLabelBox,
+  GROUP_ICON_GAP,
+  GROUP_ICON_LEFT,
+  GROUP_ICON_MAX_W,
+  GROUP_TITLE,
+  GROUP_TITLE_LEFT,
+  GROUP_TITLE_RIGHT,
+  MONO_STYLE,
+  NODE_TEXT_PAD,
+  SUB_SIZE,
+  textWidth,
+} from "./text";
 
 export type Point = { x: number; y: number };
 export type Rect = { x: number; y: number; width: number; height: number };
@@ -8,6 +21,8 @@ export type GroupRect = Rect & {
   /** 0 pour un groupe de premier niveau, 1 pour son enfant, etc. */
   depth: number;
 };
+/** Place réservée par le placement à l'étiquette d'un lien, et ses lignes de texte. */
+export type EdgeLabelBox = Rect & { lines: string[] };
 
 /** Placement absolu : tout est exprimé dans le repère du schéma, origine en haut à gauche. */
 export type Layout = {
@@ -17,9 +32,16 @@ export type Layout = {
   groups: Record<string, GroupRect>;
   /** Polyligne de chaque lien, de l'origine à la destination. */
   edges: Record<string, Point[]>;
+  /**
+   * Emplacement de l'étiquette de chaque lien routé qui en a une. Les liens conteneur → contenu
+   * n'y figurent pas : leur étiquette se place le long de leur flèche courte.
+   */
+  edgeLabels: Record<string, EdgeLabelBox>;
 };
 
 export const NODE_WIDTH = 140;
+/** Largeur maximale d'un nœud dont le sous-titre est long ; au-delà, le sous-titre est tronqué. */
+export const MAX_NODE_WIDTH = 240;
 export const NODE_HEIGHT = 110;
 /** Espace réservé en haut d'un groupe pour son titre (et pour la flèche vers un groupe enfant). */
 export const GROUP_HEADER = 60;
@@ -90,15 +112,48 @@ export function containmentPath(container: Rect, inner: Rect): Point[] {
   ];
 }
 
+/** Largeur d'un nœud : 140, plus si son sous-titre est long (jusqu'à MAX_NODE_WIDTH). */
+export function nodeWidth(node: Pick<SpecNode, "sub">): number {
+  if (!node.sub) return NODE_WIDTH;
+  const needed = Math.ceil(textWidth(node.sub, SUB_SIZE, MONO_STYLE)) + 2 * NODE_TEXT_PAD;
+  return Math.min(Math.max(needed, NODE_WIDTH), MAX_NODE_WIDTH);
+}
+
+/**
+ * Largeur minimale d'un groupe pour que son titre tienne en entier : marge, logo éventuel
+ * (à sa largeur maximale), titre, marge à droite, et de la place pour la flèche qui part de son
+ * bord haut vers un groupe qu'il contient.
+ */
+export function groupMinWidth(group: Pick<SpecGroup, "label" | "icon">, hasArrow: boolean): number {
+  const left = group.icon ? GROUP_ICON_LEFT + GROUP_ICON_MAX_W + GROUP_ICON_GAP : GROUP_TITLE_LEFT;
+  const title = textWidth(group.label.toUpperCase(), GROUP_TITLE.size, GROUP_TITLE.style);
+  return Math.ceil(left + title + GROUP_TITLE_RIGHT + (hasArrow ? 70 : 0));
+}
+
 export function buildElkGraph(spec: Spec): ElkNode {
   const parents = parentMap(spec);
   const elements = new Map<string, ElkNode>();
 
+  // Groupes qui contiennent la destination (ou l'origine) d'un lien conteneur → contenu.
+  const withArrow = new Set<string>();
+  for (const edge of spec.edges) {
+    if (!isContainmentEdge(edge, parents)) continue;
+    withArrow.add(isAncestor(edge.from, edge.to, parents) ? edge.from : edge.to);
+  }
+
   for (const node of spec.nodes) {
-    elements.set(node.id, { id: node.id, width: NODE_WIDTH, height: NODE_HEIGHT });
+    elements.set(node.id, { id: node.id, width: nodeWidth(node), height: NODE_HEIGHT });
   }
   for (const group of spec.groups) {
-    elements.set(group.id, { id: group.id, children: [], layoutOptions: GROUP_OPTIONS });
+    elements.set(group.id, {
+      id: group.id,
+      children: [],
+      layoutOptions: {
+        ...GROUP_OPTIONS,
+        "elk.nodeSize.constraints": "MINIMUM_SIZE",
+        "elk.nodeSize.minimum": `(${groupMinWidth(group, withArrow.has(group.id))}, 0)`,
+      },
+    });
   }
 
   const root: ElkNode = { id: ROOT_ID, layoutOptions: ROOT_OPTIONS, children: [], edges: [] };
@@ -111,7 +166,22 @@ export function buildElkGraph(spec: Spec): ElkNode {
 
   root.edges = spec.edges
     .filter((edge) => !isContainmentEdge(edge, parents))
-    .map((edge): ElkExtendedEdge => ({ id: edge.id, sources: [edge.from], targets: [edge.to] }));
+    .map((edge): ElkExtendedEdge => {
+      const elkEdge: ElkExtendedEdge = { id: edge.id, sources: [edge.from], targets: [edge.to] };
+      if (edge.label) {
+        // ELK réserve la place de l'étiquette (entre les colonnes) et la positionne.
+        const { width, height } = edgeLabelBox(edge.label);
+        elkEdge.labels = [
+          {
+            text: edge.label,
+            width,
+            height,
+            layoutOptions: { "elk.edgeLabels.placement": "CENTER" },
+          },
+        ];
+      }
+      return elkEdge;
+    });
   return root;
 }
 
@@ -147,6 +217,7 @@ export async function computeLayout(spec: Spec): Promise<Layout> {
 
   const rectOf = (id: string) => nodes[id] ?? groups[id];
   const edges: Layout["edges"] = {};
+  const edgeLabels: Layout["edgeLabels"] = {};
   for (const edge of spec.edges) {
     if (isContainmentEdge(edge, parents)) {
       const a = rectOf(edge.from);
@@ -158,7 +229,18 @@ export async function computeLayout(spec: Spec): Promise<Layout> {
         : containmentPath(b, a);
       continue;
     }
-    const section = laid.edges?.find((e) => e.id === edge.id)?.sections?.[0];
+    const laidEdge = laid.edges?.find((e) => e.id === edge.id);
+    const placed = laidEdge?.labels?.[0];
+    if (edge.label && placed) {
+      edgeLabels[edge.id] = {
+        x: Math.round(placed.x ?? 0),
+        y: Math.round(placed.y ?? 0),
+        width: Math.round(placed.width ?? 0),
+        height: Math.round(placed.height ?? 0),
+        lines: edgeLabelBox(edge.label).lines,
+      };
+    }
+    const section = laidEdge?.sections?.[0];
     if (!section) throw new Error(`Lien "${edge.id}" : ELK n'a pas produit de tracé.`);
     edges[edge.id] = [section.startPoint, ...(section.bendPoints ?? []), section.endPoint].map(
       (p) => ({ x: Math.round(p.x), y: Math.round(p.y) }),
@@ -171,5 +253,6 @@ export async function computeLayout(spec: Spec): Promise<Layout> {
     nodes,
     groups,
     edges,
+    edgeLabels,
   };
 }
