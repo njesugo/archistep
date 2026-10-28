@@ -4,7 +4,7 @@ Outil web qui transforme une description d'architecture de données en schéma a
 
 **État : jalon M0 (squelette et déploiement).** Pour l'instant, une page d'accueil avec thèmes clair et sombre.
 
-**Site déployé :** _à renseigner après la connexion à Netlify_
+**Site déployé :** <https://archistep.netlify.app/>
 
 ## Prérequis
 
