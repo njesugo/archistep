@@ -174,7 +174,33 @@ describe("légende et panneaux", () => {
 
     const silver = renderToStaticMarkup(<DataPanels panels={step("silver").panels} />);
     expect(silver).toContain("en cours");
-    expect(silver.match(/class="panel"/g)).toHaveLength(3); // table + SQL + DAG
+    expect(silver.match(/class="panel"/g)).toHaveLength(4); // 2 tables + SQL + DAG
+  });
+
+  it("empile les panneaux par défaut, sans grille", () => {
+    const html = renderToStaticMarkup(<DataPanels panels={step("silver").panels} />);
+    expect(html).toContain('class="panels"');
+    expect(html).not.toContain("--cols");
+    expect(html).not.toContain("--span");
+  });
+
+  it("place les panneaux dans une grille de colonnes, avec des étendues bornées", () => {
+    const silver = step("silver");
+    expect(silver.panelColumns).toBe(2);
+    const html = renderToStaticMarkup(<DataPanels panels={silver.panels} columns={2} />);
+    expect(html).toContain('class="panels grid" style="--cols:2"');
+    // deux tables côte à côte (1 colonne chacune), puis la requête et le DAG sur 2 colonnes
+    expect([...html.matchAll(/style="--span:(\d)"/g)].map((m) => m[1])).toEqual([
+      "1",
+      "1",
+      "2",
+      "2",
+    ]);
+    // une étendue supérieure au nombre de colonnes est ramenée à ce nombre
+    const wide = renderToStaticMarkup(
+      <DataPanels panels={[{ ...silver.panels![2]!, span: 3 }]} columns={2} />,
+    );
+    expect(wide).toContain('style="--span:2"');
   });
 
   it("n'affiche rien sans panneau", () => {

@@ -56,7 +56,8 @@ type Step = {
   focus: string[]; // ids à éclairer (nœuds, groupes, liens) ; vide = vue d'ensemble
   zoom?: string[]; // ids à cadrer ; par défaut tout le schéma
   flow?: { edge: string; shape?: "dot" | "square" | "bar"; count?: number }; // paquets qui circulent sur un lien
-  panels?: Panel[]; // affichés l'un sous l'autre
+  panelColumns?: 1 | 2 | 3; // colonnes de la zone des panneaux (1 par défaut : l'un sous l'autre)
+  panels?: Panel[]; // placés dans l'ordre, ligne après ligne
   beats?: Beat[]; // sous-étapes : un clic chacune
 };
 
@@ -66,10 +67,12 @@ type Beat = {
   highlight?: { panel?: number; rows?: number[]; cols?: number[]; lines?: number[] };
 };
 
+// Chaque panneau a aussi `span` : nombre de colonnes qu'il occupe (1 par défaut, au plus `panelColumns`).
 type Panel =
   | {
       type: "table";
       title: string;
+      span?: 1 | 2 | 3;
       layer?: "bronze" | "silver" | "gold";
       columns: string[];
       rows: string[][];
@@ -79,14 +82,21 @@ type Panel =
   | {
       type: "code";
       title: string;
+      span?: 1 | 2 | 3;
       language: "json" | "sql" | "python" | "yaml" | "text";
       content: string;
       note?: string;
     }
-  | { type: "list"; title: string; items: { label: string; text: string }[] }
+  | {
+      type: "list";
+      title: string;
+      span?: 1 | 2 | 3;
+      items: { label: string; text: string }[];
+    }
   | {
       type: "dag";
       title: string;
+      span?: 1 | 2 | 3;
       tasks: { name: string; state: "ok" | "run" | "wait" | "fail" }[];
     };
 ```
@@ -95,6 +105,7 @@ type Panel =
 
 - Tous les `id` de nœuds, groupes et liens sont **uniques** dans toute la spec. Les `id` d'étapes sont uniques entre eux.
 - Tout id cité dans `children`, `edges.from`, `edges.to`, `focus`, `zoom`, `flow.edge` et `beats.focus` existe. `flow.edge` désigne un **lien**. `children` ne contient que des nœuds ou des groupes.
+- `span` d'un panneau ne dépasse pas `panelColumns` de l'étape (sans `panelColumns`, tous les panneaux occupent 1 colonne).
 - Un élément a **au plus un parent** ; un groupe ne se contient pas lui-même, même indirectement.
 - Un lien relie deux éléments différents.
 - Chaque ligne d'un tableau a autant de cellules que `columns`. `numericColumns` désigne des colonnes existantes (indices à partir de 0).
@@ -107,6 +118,7 @@ type Panel =
 - Pour les autres étapes, `focus` liste ce que l'on explique : les éléments non listés sont atténués. Les groupes qui contiennent un élément éclairé restent visibles.
 - Un lien entre un groupe et un de ses descendants (par exemple un orchestrateur qui en contient un autre) est dessiné comme une flèche courte au-dessus du groupe contenu ; avec `style: "trigger"` il fait pulser sa destination.
 - `flow` anime des paquets sur un lien. Sans `shape`, la forme suit la couche de la destination : points pour bronze, carrés pour silver, barres pour gold.
+- Avec `panelColumns: 2` ou 3, les panneaux de l'étape se placent côte à côte, sur toute la largeur de la page : utile pour comparer deux tables ou deux extraits de code. Un panneau très large (requête, DAG) prend `span` égal à `panelColumns`.
 - Avec `beats`, **Suivant** parcourt d'abord les sous-étapes, puis passe à l'étape suivante. Une sous-étape peut changer ce qui est éclairé (`focus`), le texte, et surligner des lignes ou colonnes d'un tableau, ou des lignes de code.
 
 # Consignes de contenu

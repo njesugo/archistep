@@ -158,9 +158,17 @@ export default function App() {
           lang={spec.meta.language}
           ref={stageRef}
         />
-        <section className="info" lang={spec.meta.language}>
+        <section
+          className={(step.panelColumns ?? 1) > 1 ? "info wide" : "info"}
+          lang={spec.meta.language}
+        >
           <StepCaption step={step} index={stepper.step} count={stepper.count} beat={stepper.beat} />
-          <DataPanels key={step.id} panels={step.panels} highlight={beat?.highlight} />
+          <DataPanels
+            key={step.id}
+            panels={step.panels}
+            highlight={beat?.highlight}
+            columns={step.panelColumns}
+          />
         </section>
         <Controls
           steps={spec.steps}

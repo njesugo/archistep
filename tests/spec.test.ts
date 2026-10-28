@@ -183,8 +183,29 @@ describe("checkReferences", () => {
     expect(messages(spec)[0]).toMatch(/la colonne numérique 9 n'existe pas \(indices 0 à 4\)/);
   });
 
-  it("vérifie les indices de surlignage dans le bon panneau", () => {
+  /** Trois panneaux connus (table 3 × 4, code de 9 lignes, DAG), indépendants de l'exemple. */
+  const withHighlightPanels = () => {
     const spec = fresh();
+    spec.steps[5].panels = [
+      {
+        type: "table",
+        title: "t",
+        columns: ["a", "b", "c", "d"],
+        rows: [1, 2, 3].map(() => ["1", "2", "3", "4"]),
+      },
+      {
+        type: "code",
+        title: "c",
+        language: "sql",
+        content: Array.from({ length: 9 }, (_, i) => `ligne ${i}`).join("\n"),
+      },
+      { type: "dag", title: "d", tasks: [{ name: "x", state: "ok" }] },
+    ];
+    return spec;
+  };
+
+  it("vérifie les indices de surlignage dans le bon panneau", () => {
+    const spec = withHighlightPanels();
     spec.steps[5].beats = [
       { highlight: { rows: [0, 3], cols: [4] } }, // silver : 3 lignes, 4 colonnes
       { highlight: { panel: 1, lines: [0, 9] } }, // SQL silver : 9 lignes
@@ -199,7 +220,7 @@ describe("checkReferences", () => {
   });
 
   it("accepte les surlignages valides", () => {
-    const spec = fresh();
+    const spec = withHighlightPanels();
     spec.steps[5].beats = [
       { highlight: { rows: [0, 2], cols: [3] } },
       { highlight: { panel: 1, lines: [0, 8] } },
@@ -208,20 +229,51 @@ describe("checkReferences", () => {
   });
 
   it("refuse un surlignage de lignes sur un panneau qui n'est pas du bon type", () => {
-    const spec = fresh();
+    const spec = withHighlightPanels();
     spec.steps[5].beats = [{ highlight: { lines: [0] } }]; // panneau 0 = table
     expect(messages(spec)[0]).toMatch(
-      /highlight\.lines suppose un panneau de type code, mais le panneau 0 \("silver\.youtube_stats"\) est de type table/,
+      /highlight\.lines suppose un panneau de type code, mais le panneau 0 \("t"\) est de type table/,
     );
   });
 
   it("refuse un surlignage sans panneau ou avec un panneau inexistant", () => {
-    const spec = fresh();
+    const spec = withHighlightPanels();
     spec.steps[0].panels = undefined;
     spec.steps[0].beats = [{ highlight: { rows: [0] } }];
     spec.steps[5].beats = [{ highlight: { panel: 7, rows: [0] } }];
     const out = messages(spec);
     expect(out[0]).toMatch(/sous-étape 1 : highlight suppose un panneau dans l'étape/);
     expect(out[1]).toMatch(/le panneau 7 n'existe pas \(indices 0 à 2\)/);
+  });
+
+  it("accepte une disposition en colonnes", () => {
+    const spec = fresh();
+    spec.steps[5].panelColumns = 2;
+    spec.steps[5].panels[0].span = 2;
+    expect(validateSpec(spec).ok).toBe(true);
+  });
+
+  it("refuse un panneau plus large que la disposition de l'étape", () => {
+    const spec = fresh();
+    spec.steps[1].panels[0].span = 2; // l'étape « La source » n'a pas de panelColumns
+    expect(messages(spec)).toEqual([
+      'Étape "La source", panneau "Réponse de l’API · exemple fictif" : il occupe 2 colonnes, mais l\'étape n\'en a que 1 (ajoute "panelColumns" à l\'étape).',
+    ]);
+    spec.steps[1].panelColumns = 2;
+    expect(validateSpec(spec).ok).toBe(true);
+    spec.steps[1].panels[0].span = 3;
+    expect(messages(spec)[0]).toMatch(/il occupe 3 colonnes, mais l'étape n'en a que 2\.$/);
+  });
+
+  it("refuse un nombre de colonnes hors limites, ou non entier", () => {
+    for (const bad of [0, 4, 1.5, "2"]) {
+      const spec = fresh();
+      spec.steps[1].panelColumns = bad;
+      expect(validateSpec(spec).ok, String(bad)).toBe(false);
+    }
+    const spec = fresh();
+    spec.steps[1].panelColumns = 3;
+    spec.steps[1].panels[0].span = 0;
+    expect(validateSpec(spec).ok).toBe(false);
   });
 });

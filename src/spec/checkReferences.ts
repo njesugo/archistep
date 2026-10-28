@@ -156,6 +156,15 @@ export function checkReferences(spec: Spec): SpecError[] {
       }
     }
 
+    const columns = step.panelColumns ?? 1;
+    step.panels?.forEach((panel, p) => {
+      if ((panel.span ?? 1) > columns) {
+        add(
+          ["steps", i, "panels", p, "span"],
+          `${label}, panneau "${panel.title}" : il occupe ${panel.span} colonnes, mais l'étape n'en a que ${columns}${columns === 1 ? ' (ajoute "panelColumns" à l\'étape)' : ""}.`,
+        );
+      }
+    });
     step.panels?.forEach((panel, p) => {
       if (panel.type !== "table") return;
       const name = `${label}, panneau "${panel.title}"`;

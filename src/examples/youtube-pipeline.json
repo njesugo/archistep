@@ -280,7 +280,20 @@
       "panels": [
         {
           "type": "table",
-          "title": "silver.youtube_stats",
+          "title": "bronze.youtube_stats (entrée)",
+          "layer": "bronze",
+          "columns": ["day", "channel_id", "views", "estimatedMinutesWatched", "_fivetran_synced"],
+          "rows": [
+            ["2026-10-27 00:00:00", "UC_demo", "1 270", "3 880", "2026-10-27 22:00"],
+            ["2026-10-27 00:00:00", "UC_demo", "1 284", "3 912", "2026-10-28 02:00"],
+            ["2026-10-26 00:00:00", "UC_demo", "1 190", "3 405", "2026-10-27 02:00"],
+            ["2026-10-25 00:00:00", "UC_demo", "1 047", "3 120", "2026-10-26 02:00"]
+          ],
+          "numericColumns": [2, 3]
+        },
+        {
+          "type": "table",
+          "title": "silver.youtube_stats (sortie)",
           "layer": "silver",
           "columns": ["day (DATE)", "channel_id", "views", "minutes_watched"],
           "rows": [
@@ -294,7 +307,8 @@
           "type": "code",
           "title": "Requête dbt · silver",
           "language": "sql",
-          "content": "select\n  cast(day as date)        as day,\n  channel_id,\n  views,\n  estimatedMinutesWatched  as minutes_watched\nfrom bronze.youtube_stats\nqualify row_number() over (\n  partition by day, channel_id\n  order by _fivetran_synced desc) = 1"
+          "content": "select\n  cast(day as date)        as day,\n  channel_id,\n  views,\n  estimatedMinutesWatched  as minutes_watched\nfrom bronze.youtube_stats\nqualify row_number() over (\n  partition by day, channel_id\n  order by _fivetran_synced desc) = 1",
+          "span": 2
         },
         {
           "type": "dag",
@@ -316,7 +330,8 @@
               "name": "dbt_test",
               "state": "wait"
             }
-          ]
+          ],
+          "span": 2
         }
       ],
       "beats": [
@@ -324,18 +339,19 @@
         {
           "text": "Cette fenêtre numérote les lignes de chaque journée, de la synchronisation la plus récente à la plus ancienne, et ne garde que la première : le doublon disparaît.",
           "highlight": {
-            "panel": 1,
+            "panel": 2,
             "lines": [6, 7, 8]
           }
         },
         {
           "text": "Résultat : une seule ligne par journée, avec la valeur révisée (1 284 vues le 27 octobre), les colonnes renommées et la date convertie.",
           "highlight": {
-            "panel": 0,
+            "panel": 1,
             "rows": [0]
           }
         }
-      ]
+      ],
+      "panelColumns": 2
     },
     {
       "id": "gold",

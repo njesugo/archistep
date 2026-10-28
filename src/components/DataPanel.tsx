@@ -116,26 +116,40 @@ function Body({ panel, highlight }: { panel: Panel; highlight: Highlight | undef
 
 /**
  * `highlight` (d'une sous-étape) vise le panneau `highlight.panel` (0 par défaut) ;
- * les autres panneaux restent inchangés.
+ * les autres panneaux restent inchangés. Avec `columns` > 1, les panneaux se placent dans une
+ * grille de ce nombre de colonnes, dans l'ordre ; un panneau peut en occuper plusieurs (`span`).
  */
 export function DataPanels({
   panels,
   highlight,
+  columns = 1,
 }: {
   panels: Panel[] | undefined;
   highlight?: Highlight;
+  columns?: number;
 }) {
   if (!panels?.length) return null;
   const target = highlight?.panel ?? 0;
+  const grid = columns > 1;
   return (
-    <div className="panels">
+    <div
+      className={grid ? "panels grid" : "panels"}
+      style={grid ? ({ "--cols": columns } as CSSProperties) : undefined}
+    >
       {panels.map((panel, i) => {
         const hl = i === target ? highlight : undefined;
         const active =
           (panel.type === "table" && hasTableHighlight(hl)) ||
           (panel.type === "code" && hasCodeHighlight(hl));
         return (
-          <section key={i} className={active ? "panel has-hl" : "panel"} aria-label={panel.title}>
+          <section
+            key={i}
+            className={active ? "panel has-hl" : "panel"}
+            aria-label={panel.title}
+            style={
+              grid ? ({ "--span": Math.min(panel.span ?? 1, columns) } as CSSProperties) : undefined
+            }
+          >
             <Title panel={panel} />
             <Body panel={panel} highlight={hl} />
           </section>
