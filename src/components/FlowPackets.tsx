@@ -11,10 +11,9 @@ function Packet({ shape, index }: { shape: ResolvedFlow["shape"]; index: number 
 }
 
 /**
- * Paquets qui circulent le long du lien, en boucle, tant que le composant est monté ;
- * atténués quand leur lien ne fait pas partie de ce qui est mis en valeur.
+ * Paquets qui circulent le long du lien, en boucle, tant que le composant est monté.
  */
-export function FlowPackets({ flow, dimmed = false }: { flow: ResolvedFlow; dimmed?: boolean }) {
+export function FlowPackets({ flow }: { flow: ResolvedFlow }) {
   const refs = useRef<(SVGGElement | null)[]>([]);
 
   useEffect(() => {
@@ -39,7 +38,7 @@ export function FlowPackets({ flow, dimmed = false }: { flow: ResolvedFlow; dimm
 
   const style = { "--c": `var(${flow.color})` } as CSSProperties;
   return (
-    <g className={dimmed ? "packets dim" : "packets"} style={style} aria-hidden="true">
+    <g className="packets" style={style} aria-hidden="true">
       {Array.from({ length: flow.count }, (_, i) => (
         <g
           key={i}

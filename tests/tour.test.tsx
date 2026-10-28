@@ -5,10 +5,10 @@ import azure from "./fixtures/azure.json";
 import { Controls, type AutoplayState } from "../src/components/Controls";
 import { Scene } from "../src/components/Scene";
 import { Stage } from "../src/components/Stage";
-import { resolveAllFlows, resolveFlow } from "../src/engine/flow";
+import { resolveFlow } from "../src/engine/flow";
 import { computeLayout } from "../src/engine/layout";
 import { litIds } from "../src/engine/state";
-import { nextTourIndex, TOUR_STEP_MS, tourDwellMs, tourSteps } from "../src/engine/tour";
+import { nextTourIndex, TOUR_STEP_MS, tourDwellMs, tourFlows, tourSteps } from "../src/engine/tour";
 import type { Spec } from "../src/spec/schema";
 import { validateSpec } from "../src/spec/validate";
 
@@ -56,75 +56,64 @@ describe("étapes du parcours", () => {
   });
 });
 
-describe("tous les flux ensemble", () => {
-  it("renvoie un flux par lien, sans doublon, dans l'ordre des étapes", async () => {
+describe("un seul flux à la fois", () => {
+  it("ne met en mouvement que le flux de l'étape du parcours", async () => {
     const layout = await computeLayout(spec);
-    const flows = resolveAllFlows(spec, layout);
-    expect(flows.map((f) => f.edgeId)).toEqual(["e1", "e2", "t1", "e3", "e4"]);
-    expect(new Set(flows.map((f) => f.edgeId)).size).toBe(flows.length);
-  });
-
-  it("reprend les mêmes réglages que le flux de l'étape", async () => {
-    const layout = await computeLayout(spec);
-    const all = resolveAllFlows(spec, layout);
-    for (const step of spec.steps) {
-      const one = resolveFlow(spec, step, layout);
-      if (!one) continue;
-      expect(all.find((f) => f.edgeId === one.edgeId)).toEqual(one);
+    for (const index of tourSteps(spec)) {
+      const flows = tourFlows(spec, index, layout);
+      const own = resolveFlow(spec, spec.steps[index]!, layout);
+      expect(flows, spec.steps[index]!.id).toEqual(own ? [own] : []);
+      expect(flows.length).toBeLessThanOrEqual(1);
     }
   });
 
-  it("ne garde qu'un flux quand deux étapes animent le même lien", async () => {
+  it("change de flux d'une étape à l'autre, et chacun apparaît au cours d'un tour", async () => {
     const layout = await computeLayout(spec);
-    const twice = {
-      ...spec,
-      steps: [...spec.steps, { ...spec.steps[2]!, id: "doublon" }],
-    };
-    expect(resolveAllFlows(twice, layout)).toHaveLength(resolveAllFlows(spec, layout).length);
+    const seen = tourSteps(spec).flatMap((i) => tourFlows(spec, i, layout).map((f) => f.edgeId));
+    expect(seen).toEqual(["e1", "e2", "t1", "e3", "e4"]);
+  });
+
+  it("n'anime rien pendant une étape sans flux", async () => {
+    const layout = await computeLayout(spec);
+    const sourceStep = spec.steps.findIndex((s) => s.id === "source"); // pas de flux
+    expect(tourFlows(spec, sourceStep, layout)).toEqual([]);
+  });
+
+  it("n'anime rien sans étape à parcourir, ou pour une étape inconnue", async () => {
+    const layout = await computeLayout(spec);
+    expect(tourFlows(spec, undefined, layout)).toEqual([]);
+    expect(tourFlows(spec, 999, layout)).toEqual([]);
   });
 
   it("est vide pour une spec sans flux", async () => {
     const layout = await computeLayout(azureSpec);
-    expect(resolveAllFlows(azureSpec, layout)).toEqual([]);
+    for (let i = 0; i < azureSpec.steps.length; i++) {
+      expect(tourFlows(azureSpec, i, layout)).toEqual([]);
+    }
   });
 });
 
 describe("rendu de l'animation continue", () => {
-  it("dessine tous les flux et atténue ceux dont le lien n'est pas éclairé", async () => {
+  it("dessine le seul flux donné, en pleine intensité, et l'impulsion de son lien de déclenchement", async () => {
     const layout = await computeLayout(spec);
-    const flows = resolveAllFlows(spec, layout);
-    const lit = litIds(spec, spec.steps[2]!)!; // ingestion : éclaire e1
+    const orchestration = spec.steps.findIndex((s) => s.id === "orchestration");
+    const flows = tourFlows(spec, orchestration, layout);
+    const lit = litIds(spec, spec.steps[orchestration]!)!;
     const html = renderToStaticMarkup(
       <Scene spec={spec} layout={layout} lit={lit} flows={flows} />,
     );
-    expect(html.match(/class="packets/g)).toHaveLength(flows.length);
-    // seul le flux du lien éclairé garde sa pleine intensité
     expect(html.match(/class="packets"/g)).toHaveLength(1);
-    expect(html.match(/class="packets dim"/g)).toHaveLength(flows.length - 1);
-  });
-
-  it("ne dessine qu'une impulsion en pleine intensité (le lien de déclenchement éclairé)", async () => {
-    const layout = await computeLayout(spec);
-    const flows = resolveAllFlows(spec, layout);
-    const orchestration = spec.steps.find((s) => s.id === "orchestration")!;
-    const lit = litIds(spec, orchestration)!;
-    const html = renderToStaticMarkup(
-      <Scene spec={spec} layout={layout} lit={lit} flows={flows} />,
-    );
     expect(html.match(/class="pulse"/g)).toHaveLength(1);
-    const other = renderToStaticMarkup(
-      <Scene spec={spec} layout={layout} lit={litIds(spec, spec.steps[2]!)!} flows={flows} />,
-    );
-    expect(other).toContain('class="pulse dim"');
-    expect(other).not.toContain('class="pulse"');
+    expect(html).not.toContain("packets dim");
   });
 
-  it("sans mise en valeur, tous les flux sont en pleine intensité", async () => {
+  it("ne dessine aucun paquet, aucune impulsion, quand il n'y a pas de flux", async () => {
     const layout = await computeLayout(spec);
-    const flows = resolveAllFlows(spec, layout);
-    const html = renderToStaticMarkup(<Scene spec={spec} layout={layout} flows={flows} />);
-    expect(html).not.toContain("packets dim");
-    expect(html.match(/class="packets"/g)).toHaveLength(flows.length);
+    const html = renderToStaticMarkup(
+      <Scene spec={spec} layout={layout} lit={litIds(spec, spec.steps[1]!)} flows={[]} />,
+    );
+    expect(html).not.toContain("packets");
+    expect(html).not.toContain("pulse");
   });
 });
 
