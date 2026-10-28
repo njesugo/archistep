@@ -20,6 +20,8 @@ type Props = {
   onToggleLaser: () => void;
   autoplay: AutoplayState;
   onTogglePlay: () => void;
+  animation: AutoplayState;
+  onToggleAnimation: () => void;
   speed: string;
   onSpeed: (id: string) => void;
   onPrev: () => void;
@@ -43,6 +45,8 @@ export function Controls({
   onToggleLaser,
   autoplay,
   onTogglePlay,
+  animation,
+  onToggleAnimation,
   speed,
   onSpeed,
   onPrev,
@@ -106,8 +110,17 @@ export function Controls({
         >
           Lecture auto : {AUTOPLAY_LABEL[autoplay]}
         </button>
+        <button
+          type="button"
+          aria-pressed={animation !== "off"}
+          aria-keyshortcuts="C"
+          title="Le schéma entier reste affiché, sans zoom : les étapes s'éclairent à tour de rôle, en boucle, et tous les flux tournent (C)"
+          onClick={onToggleAnimation}
+        >
+          Animation continue : {AUTOPLAY_LABEL[animation]}
+        </button>
         <select
-          aria-label="Vitesse de la lecture auto"
+          aria-label="Vitesse de la lecture auto et de l’animation continue"
           value={speed}
           onChange={(e) => onSpeed(e.target.value)}
         >

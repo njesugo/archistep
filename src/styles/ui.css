@@ -274,3 +274,41 @@ td.hl {
 .exit-presentation:focus-visible {
   opacity: 1;
 }
+
+/* Plein écran sur le schéma seul. */
+.stage {
+  position: relative;
+}
+.stage-fullscreen {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 5;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  opacity: 0.75;
+}
+.stage-fullscreen:hover,
+.stage-fullscreen:focus-visible,
+.stage:fullscreen .stage-fullscreen {
+  opacity: 1;
+}
+.stage:fullscreen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 0;
+  background: var(--card);
+}
+.stage:fullscreen .scroll {
+  width: 100%;
+  overflow: hidden;
+}
+/* en plein écran, le bouton de sortie s'efface presque : il ne doit pas gêner l'enregistrement */
+.stage:fullscreen .stage-fullscreen:not(:hover):not(:focus-visible) {
+  opacity: 0.3;
+}

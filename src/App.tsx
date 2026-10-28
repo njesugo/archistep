@@ -8,11 +8,13 @@ import { StepCaption } from "./components/StepCaption";
 import { downloadText, slugify } from "./download";
 import { frameFor, minFrameWidth, stageAspect } from "./engine/camera";
 import { parentMap } from "./engine/layout";
-import { resolveFlow } from "./engine/flow";
+import { resolveAllFlows, resolveFlow } from "./engine/flow";
 import { DEFAULT_SPEED, dwellMs, speedFactor } from "./engine/autoplay";
 import { litIds, positions, revealedIds } from "./engine/state";
+import { nextTourIndex, tourDwellMs, tourSteps } from "./engine/tour";
 import { resolveTheme, THEME_KEY, toggleTheme, type Theme } from "./theme";
-import { useElementWidth } from "./useElementWidth";
+import { useElementSize } from "./useElementSize";
+import { useFullscreen } from "./useFullscreen";
 import { useLayout } from "./useLayout";
 import { useAutoAdvance } from "./useAutoAdvance";
 import { useReducedMotion } from "./useReducedMotion";
@@ -47,6 +49,10 @@ export default function App() {
   // Lecture automatique : les étapes défilent seules ; toute navigation à la main la coupe.
   const [playing, setPlaying] = useState(false);
   const [speedId, setSpeedId] = useState<string>(DEFAULT_SPEED);
+  // Animation continue : le schéma entier reste cadré, les étapes s'éclairent à tour de rôle en
+  // boucle et tous les flux tournent ensemble. La légende et les panneaux ne changent pas.
+  const [animating, setAnimating] = useState(false);
+  const [tourIndex, setTourIndex] = useState(0);
 
   // Tout ce qui est affiché vient de la spec à laquelle appartient le placement : pendant un
   // nouveau calcul, l'ancien schéma reste à l'écran, cohérent avec sa légende.
@@ -79,23 +85,28 @@ export default function App() {
       return;
     }
     if (atEnd) first(); // relancer depuis la fin : on repart du début
+    setAnimating(false);
     setPlaying(true);
   }, [playing, atEnd, first]);
   const goPrev = useCallback(() => {
     setPlaying(false);
+    setAnimating(false);
     prev();
   }, [prev]);
   const goNext = useCallback(() => {
     setPlaying(false);
+    setAnimating(false);
     next();
   }, [next]);
   const goFirst = useCallback(() => {
     setPlaying(false);
+    setAnimating(false);
     first();
   }, [first]);
   const goTo = useCallback(
     (index: number) => {
       setPlaying(false);
+      setAnimating(false);
       goToStep(index);
     },
     [goToStep],
@@ -106,30 +117,80 @@ export default function App() {
   const [override, setOverride] = useState<boolean | null>(null);
   const progressive = override ?? spec.meta.buildMode === "progressive";
 
-  const lit = useMemo(() => (step ? litIds(spec, step, beat) : null), [spec, step, beat]);
+  // La caméra s'adapte à la taille réelle de la scène (téléphone, tiroir ouvert, plein écran).
+  const [stageRef, stageSize, stageEl] = useElementSize<HTMLElement>();
+  const stageWidth = stageSize.width;
+  const fullscreen = useFullscreen(stageEl);
+
+  // Vue globale : le schéma entier, sans zoom, ni construction progressive. C'est celle de
+  // l'animation continue et du plein écran.
+  const globalView = animating || fullscreen.active;
+
+  const tour = useMemo(() => tourSteps(spec), [spec]);
+  const tourStepIndex = tour.length > 0 ? tour[tourIndex % tour.length] : undefined;
+  const tourStep = tourStepIndex !== undefined ? spec.steps[tourStepIndex] : undefined;
+  const advanceTour = useCallback(
+    () => setTourIndex((i) => nextTourIndex(i, tour.length)),
+    [tour.length],
+  );
+  const animation: AutoplayState = !animating ? "off" : idle ? "on" : "paused";
+  useAutoAdvance(
+    animating && idle && tour.length > 1,
+    tourDwellMs(speedFactor(speedId)),
+    advanceTour,
+    tourIndex,
+  );
+  const toggleAnimate = useCallback(() => {
+    if (animating) {
+      setAnimating(false);
+      return;
+    }
+    setPlaying(false);
+    first(); // la légende et les panneaux restent ceux de l'étape 1
+    setTourIndex(0);
+    setAnimating(true);
+  }, [animating, first]);
+
+  const lit = useMemo(() => {
+    if (animating) return tourStep ? litIds(spec, tourStep) : null;
+    if (fullscreen.active) return null;
+    return step ? litIds(spec, step, beat) : null;
+  }, [animating, fullscreen.active, spec, tourStep, step, beat]);
   const revealed = useMemo(
-    () => revealedIds(spec, allPositions, stepper.index, progressive),
-    [spec, allPositions, stepper.index, progressive],
+    () => (globalView ? null : revealedIds(spec, allPositions, stepper.index, progressive)),
+    [globalView, spec, allPositions, stepper.index, progressive],
   );
 
   const reduceMotion = useReducedMotion();
   const layoutReady = layout.status === "ready" ? layout.layout : null;
-  // Sans mouvement : ni paquets ni impulsion.
-  const flow = useMemo(
-    () => (step && layoutReady && !reduceMotion ? resolveFlow(spec, step, layoutReady) : null),
-    [spec, step, layoutReady, reduceMotion],
-  );
+  // Sans mouvement : ni paquets ni impulsion. En animation continue, tous les flux tournent ;
+  // en plein écran seul, le schéma reste fixe.
+  const flows = useMemo(() => {
+    if (reduceMotion || !layoutReady) return [];
+    if (animating) return resolveAllFlows(spec, layoutReady);
+    if (fullscreen.active || !step) return [];
+    const flow = resolveFlow(spec, step, layoutReady);
+    return flow ? [flow] : [];
+  }, [reduceMotion, layoutReady, animating, fullscreen.active, spec, step]);
 
-  // La caméra s'adapte à la largeur réelle de la scène (téléphone, tiroir ouvert, présentation).
-  const [stageRef, stageWidth] = useElementWidth<HTMLElement>();
-  const aspect = layoutReady && stageWidth ? stageAspect(layoutReady, stageWidth) : undefined;
-  const frame = useMemo(
-    () =>
-      step && layoutReady && aspect
-        ? frameFor(layoutReady, step.zoom, aspect, parents, minFrameWidth(stageWidth))
-        : undefined,
-    [step, layoutReady, aspect, parents, stageWidth],
-  );
+  // En plein écran, la scène prend le rapport de l'écran et le schéma s'y ajuste en entier.
+  const screenAspect = stageSize.height > 0 ? stageSize.width / stageSize.height : undefined;
+  const aspect =
+    layoutReady && stageWidth
+      ? fullscreen.active && screenAspect
+        ? screenAspect
+        : stageAspect(layoutReady, stageWidth)
+      : undefined;
+  const frame = useMemo(() => {
+    if (!layoutReady || !aspect) return undefined;
+    if (globalView) {
+      const floor = fullscreen.active ? 0 : minFrameWidth(stageWidth);
+      return frameFor(layoutReady, undefined, aspect, parents, floor);
+    }
+    return step
+      ? frameFor(layoutReady, step.zoom, aspect, parents, minFrameWidth(stageWidth))
+      : undefined;
+  }, [layoutReady, aspect, globalView, fullscreen.active, step, parents, stageWidth]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -181,8 +242,20 @@ export default function App() {
       exit: exitPresentation,
       laser: toggleLaser,
       play: togglePlay,
+      animate: toggleAnimate,
+      fullscreen: fullscreen.toggle,
     }),
-    [goNext, goPrev, goFirst, present, exitPresentation, toggleLaser, togglePlay],
+    [
+      goNext,
+      goPrev,
+      goFirst,
+      present,
+      exitPresentation,
+      toggleLaser,
+      togglePlay,
+      toggleAnimate,
+      fullscreen.toggle,
+    ],
   );
   useShortcuts(shortcuts);
 
@@ -190,6 +263,7 @@ export default function App() {
   function afterLoad(loaded: unknown) {
     if (!loaded) return;
     setPlaying(false);
+    setAnimating(false);
     stepper.first();
     setOverride(null);
   }
@@ -221,14 +295,23 @@ export default function App() {
           layout={layout}
           lit={lit}
           revealed={revealed}
-          flow={flow}
+          flows={flows}
           frame={frame}
           animateCamera={!reduceMotion}
           aspect={aspect}
           measured={stageWidth > 0}
           lang={spec.meta.language}
+          fullscreen={{
+            supported: fullscreen.supported,
+            active: fullscreen.active,
+            onToggle: fullscreen.toggle,
+            showButton: !presenting,
+          }}
           ref={stageRef}
-        />
+        >
+          {/* Dans le cadre, pour rester visible en plein écran. */}
+          <LaserPointer active={laser} />
+        </Stage>
         <section
           className={(step.panelColumns ?? 1) > 1 ? "info wide" : "info"}
           lang={spec.meta.language}
@@ -255,6 +338,8 @@ export default function App() {
           onToggleLaser={toggleLaser}
           autoplay={autoplay}
           onTogglePlay={togglePlay}
+          animation={animation}
+          onToggleAnimation={toggleAnimate}
           speed={speedId}
           onSpeed={setSpeedId}
           onPrev={goPrev}
@@ -278,7 +363,6 @@ export default function App() {
           />
         </Suspense>
       )}
-      <LaserPointer active={laser} />
       <SpecDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}

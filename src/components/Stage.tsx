@@ -1,4 +1,4 @@
-import type { Ref } from "react";
+import type { ReactNode, Ref } from "react";
 import type { Frame } from "../engine/camera";
 import type { ResolvedFlow } from "../engine/flow";
 import type { Layout } from "../engine/layout";
@@ -18,7 +18,7 @@ type Props = {
   layout: LayoutState;
   lit: ReadonlySet<string> | null;
   revealed: ReadonlySet<string> | null;
-  flow: ResolvedFlow | null;
+  flows: ResolvedFlow[];
   frame: Frame | undefined;
   animateCamera: boolean;
   aspect: number | undefined;
@@ -26,20 +26,45 @@ type Props = {
   measured: boolean;
   /** Langue du contenu de la spec, si elle diffère de celle de l'interface. */
   lang?: string;
+  /** Plein écran sur le schéma ; le bouton se cache pendant la présentation (la touche F reste). */
+  fullscreen: { supported: boolean; active: boolean; onToggle: () => void; showButton: boolean };
+  /** Éléments à garder visibles en plein écran (seul ce qui est dans le cadre l'est). */
+  children?: ReactNode;
   ref?: Ref<HTMLElement>;
 };
+
+function FullscreenIcon({ active }: { active: boolean }) {
+  // Quatre coins qui s'écartent (entrer) ou se rapprochent (sortir).
+  const d = active
+    ? "M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"
+    : "M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5";
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+      <path
+        d={d}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 /** Cadre du schéma : placement en cours, erreur, ou scène. */
 export function Stage({
   layout,
   lit,
   revealed,
-  flow,
+  flows,
   frame,
   animateCamera,
   aspect,
   measured,
   lang,
+  fullscreen,
+  children,
   ref,
 }: Props) {
   const showScene = layout.status === "ready" && measured;
@@ -53,7 +78,7 @@ export function Stage({
             layout={layout.layout}
             lit={lit}
             revealed={revealed}
-            flow={flow}
+            flows={flows}
             frame={frame}
             animateCamera={animateCamera}
             aspect={aspect}
@@ -68,6 +93,22 @@ export function Stage({
           </p>
         )}
       </div>
+      {fullscreen.supported && showScene && (fullscreen.showButton || fullscreen.active) && (
+        <button
+          type="button"
+          className="stage-fullscreen"
+          aria-pressed={fullscreen.active}
+          aria-keyshortcuts="F"
+          aria-label={fullscreen.active ? "Quitter le plein écran" : "Plein écran sur le schéma"}
+          title={
+            fullscreen.active ? "Quitter le plein écran (Échap)" : "Le schéma en plein écran (F)"
+          }
+          onClick={fullscreen.onToggle}
+        >
+          <FullscreenIcon active={fullscreen.active} />
+        </button>
+      )}
+      {children}
     </section>
   );
 }
