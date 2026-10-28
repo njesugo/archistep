@@ -308,6 +308,28 @@ td.hl {
   width: 100%;
   overflow: hidden;
 }
+/* zoom libre en plein écran : on glisse pour déplacer, la molette zoome */
+.stage:fullscreen .scene {
+  cursor: grab;
+  touch-action: none;
+}
+.stage:fullscreen .scene:active {
+  cursor: grabbing;
+}
+.stage:fullscreen {
+  touch-action: none;
+}
+.stage-reset {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  z-index: 5;
+  opacity: 0.6;
+}
+.stage-reset:hover,
+.stage-reset:focus-visible {
+  opacity: 1;
+}
 /* en plein écran, le bouton de sortie s'efface presque : il ne doit pas gêner l'enregistrement */
 .stage:fullscreen .stage-fullscreen:not(:hover):not(:focus-visible) {
   opacity: 0.3;

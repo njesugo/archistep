@@ -40,12 +40,23 @@ export function litIds(spec: Spec, step: Step, beat?: Beat): Set<string> | null 
 }
 
 export type ShortcutAction =
-  "next" | "prev" | "first" | "present" | "exit" | "laser" | "play" | "animate" | "fullscreen";
+  | "next"
+  | "prev"
+  | "first"
+  | "present"
+  | "exit"
+  | "laser"
+  | "play"
+  | "animate"
+  | "fullscreen"
+  | "zoomIn"
+  | "zoomOut";
 
 /**
  * Raccourcis clavier (cahier, section 8) : flèche droite ou Espace = suivant, flèche gauche =
  * précédent, 0 ou Début = première étape, P = mode présentation, Échap = quitter,
- * L = pointeur laser, A = lecture automatique, C = animation continue, F = plein écran.
+ * L = pointeur laser, A = lecture automatique, C = animation continue, F = plein écran,
+ * + et - = zoom (en plein écran ; 0 y revient à la vue d'ensemble).
  * Sur un bouton, Espace le déclenche déjà lui-même : on ne l'intercepte pas, sinon l'étape
  * avancerait deux fois.
  */
@@ -75,6 +86,12 @@ export function keyAction(key: string, onButton: boolean): ShortcutAction | null
     case "f":
     case "F":
       return "fullscreen";
+    case "+":
+    case "=":
+      return "zoomIn";
+    case "-":
+    case "_":
+      return "zoomOut";
     case "Escape":
       return "exit";
     default:
