@@ -67,6 +67,8 @@ describe("navigation", () => {
     expect(keyAction("p", false)).toBe("present");
     expect(keyAction("P", false)).toBe("present");
     expect(keyAction("Escape", false)).toBe("exit");
+    expect(keyAction("l", false)).toBe("laser");
+    expect(keyAction("L", false)).toBe("laser");
     expect(keyAction("a", false)).toBeNull();
   });
 
@@ -89,6 +91,8 @@ describe("Controls", () => {
         drawerOpen={false}
         onToggleDrawer={() => {}}
         onPresent={() => {}}
+        laser={false}
+        onToggleLaser={() => {}}
         onPrev={() => {}}
         onNext={() => {}}
         onGoTo={() => {}}
@@ -119,6 +123,8 @@ describe("Controls", () => {
           drawerOpen={false}
           onToggleDrawer={() => {}}
           onPresent={() => {}}
+          laser={false}
+          onToggleLaser={() => {}}
           onPrev={() => {}}
           onNext={() => {}}
           onGoTo={() => {}}
@@ -137,6 +143,7 @@ describe("Controls", () => {
     expect(html).toContain('aria-keyshortcuts="ArrowRight Space"');
     expect(html).toContain('aria-keyshortcuts="ArrowLeft"');
     expect(html).toMatch(/aria-keyshortcuts="P"[^>]*>Mode présentation/);
+    expect(html).toMatch(/aria-keyshortcuts="L"/);
   });
 
   it("désactive Précédent au début et Suivant à la fin", () => {

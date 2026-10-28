@@ -1,0 +1,23 @@
+/* Pointeur laser : un point rouge lumineux, au-dessus de tout (tiroir compris), sans événements. */
+.laser {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0 16%, var(--laser) 24% 58%, transparent 72%);
+  box-shadow: 0 0 14px 6px color-mix(in srgb, var(--laser) 55%, transparent);
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0;
+  transform: translate3d(-100px, -100px, 0);
+  transition: opacity 0.15s;
+  will-change: transform;
+}
+
+/* Le point remplace le curseur ; les boutons et champs gardent le leur. */
+body.laser-on {
+  cursor: none;
+}
