@@ -69,7 +69,9 @@ describe("navigation", () => {
     expect(keyAction("Escape", false)).toBe("exit");
     expect(keyAction("l", false)).toBe("laser");
     expect(keyAction("L", false)).toBe("laser");
-    expect(keyAction("a", false)).toBeNull();
+    expect(keyAction("a", false)).toBe("play");
+    expect(keyAction("A", false)).toBe("play");
+    expect(keyAction("z", false)).toBeNull();
   });
 
   it("laisse Espace au bouton focalisé (pas de double avance)", () => {
@@ -93,6 +95,10 @@ describe("Controls", () => {
         onPresent={() => {}}
         laser={false}
         onToggleLaser={() => {}}
+        autoplay="off"
+        onTogglePlay={() => {}}
+        speed="normal"
+        onSpeed={() => {}}
         onPrev={() => {}}
         onNext={() => {}}
         onGoTo={() => {}}
@@ -125,6 +131,10 @@ describe("Controls", () => {
           onPresent={() => {}}
           laser={false}
           onToggleLaser={() => {}}
+          autoplay="off"
+          onTogglePlay={() => {}}
+          speed="normal"
+          onSpeed={() => {}}
           onPrev={() => {}}
           onNext={() => {}}
           onGoTo={() => {}}

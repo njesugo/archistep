@@ -1,4 +1,10 @@
+import { PLAYBACK_SPEEDS } from "../engine/autoplay";
 import type { Step } from "../spec/schema";
+
+/** `paused` : la lecture est armée mais suspendue (tiroir ou fenêtre ouverts). */
+export type AutoplayState = "off" | "on" | "paused";
+
+const AUTOPLAY_LABEL: Record<AutoplayState, string> = { off: "non", on: "oui", paused: "en pause" };
 
 type Props = {
   steps: Step[];
@@ -12,6 +18,10 @@ type Props = {
   onPresent: () => void;
   laser: boolean;
   onToggleLaser: () => void;
+  autoplay: AutoplayState;
+  onTogglePlay: () => void;
+  speed: string;
+  onSpeed: (id: string) => void;
   onPrev: () => void;
   onNext: () => void;
   onGoTo: (index: number) => void;
@@ -31,6 +41,10 @@ export function Controls({
   onPresent,
   laser,
   onToggleLaser,
+  autoplay,
+  onTogglePlay,
+  speed,
+  onSpeed,
   onPrev,
   onNext,
   onGoTo,
@@ -83,6 +97,26 @@ export function Controls({
         >
           Construction progressive : {progressive ? "oui" : "non"}
         </button>
+        <button
+          type="button"
+          aria-pressed={autoplay !== "off"}
+          aria-keyshortcuts="A"
+          title="Les étapes défilent toutes seules, le temps de lire chacune (A). Un clic sur Précédent, Suivant ou une pastille reprend la main."
+          onClick={onTogglePlay}
+        >
+          Lecture auto : {AUTOPLAY_LABEL[autoplay]}
+        </button>
+        <select
+          aria-label="Vitesse de la lecture auto"
+          value={speed}
+          onChange={(e) => onSpeed(e.target.value)}
+        >
+          {PLAYBACK_SPEEDS.map((option) => (
+            <option key={option.id} value={option.id}>
+              Vitesse : {option.label.toLowerCase()}
+            </option>
+          ))}
+        </select>
         <button
           type="button"
           aria-pressed={laser}
