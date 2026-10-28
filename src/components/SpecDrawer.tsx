@@ -6,6 +6,7 @@ import { lineOf, locatePath } from "../spec/locate";
 import type { Spec } from "../spec/schema";
 import { copyText } from "../clipboard";
 import { buildGeneratePrompt } from "../prompt";
+import { buildShareUrl, encodeSpec, LONG_LINK_CHARS } from "../share";
 import "../styles/drawer.css";
 
 type Props = {
@@ -16,6 +17,8 @@ type Props = {
   errors: SpecError[];
   /** Dernière spec valide : c'est elle qui est dessinée. */
   spec: Spec;
+  /** La spec affichée vient d'un lien de partage et n'a pas été modifiée. */
+  fromLink: boolean;
   onImport: (text: string) => void;
   onExport: () => void;
   onLoadExample: (id: string) => void;
@@ -33,6 +36,7 @@ export function SpecDrawer({
   onTextChange,
   errors,
   spec,
+  fromLink,
   onImport,
   onExport,
   onLoadExample,
@@ -40,6 +44,7 @@ export function SpecDrawer({
   const area = useRef<HTMLTextAreaElement>(null);
   const file = useRef<HTMLInputElement>(null);
   const [copied, setCopied] = useState<"idle" | "ok" | "failed">("idle");
+  const [shared, setShared] = useState<{ length: number } | "failed" | null>(null);
   const prompt = useMemo(() => buildGeneratePrompt(), []);
 
   // À l'ouverture, le curseur va dans l'éditeur ; à la fermeture, il revient au bouton Spec.
@@ -69,6 +74,16 @@ export function SpecDrawer({
     const chosen = event.target.files?.[0];
     event.target.value = ""; // permet de réimporter le même fichier
     if (chosen) onImport(await chosen.text());
+  }
+
+  /** Lien de partage de la dernière spec valide, copié dans le presse-papiers. */
+  async function onShare() {
+    try {
+      const url = buildShareUrl(window.location.href, await encodeSpec(JSON.stringify(spec)));
+      setShared((await copyText(url)) ? { length: url.length } : "failed");
+    } catch {
+      setShared("failed");
+    }
   }
 
   async function onCopy() {
@@ -109,6 +124,9 @@ export function SpecDrawer({
         <button type="button" onClick={onExport}>
           Exporter
         </button>
+        <button type="button" onClick={onShare}>
+          Copier le lien
+        </button>
         <select
           aria-label="Exemples"
           value=""
@@ -122,6 +140,24 @@ export function SpecDrawer({
           ))}
         </select>
       </div>
+
+      <p className="note" role="status">
+        {shared === "failed" &&
+          "Copie du lien impossible : utilise Exporter pour partager le fichier."}
+        {shared && shared !== "failed" && (
+          <>
+            Lien de partage copié ({shared.length} caractères).
+            {shared.length > LONG_LINK_CHARS &&
+              " Il est long : certaines messageries le tronquent. Préfère alors Exporter."}
+          </>
+        )}
+      </p>
+      {fromLink && (
+        <p className="note">
+          Spec ouverte depuis un lien de partage : elle n’est enregistrée dans ton navigateur que si
+          tu la modifies.
+        </p>
+      )}
 
       <textarea
         ref={area}

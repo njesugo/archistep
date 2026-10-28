@@ -11,11 +11,16 @@ export type LayoutState =
   | { status: "ready"; spec: Spec; layout: Layout }
   | { status: "error"; message: string };
 
-export function useLayout(spec: Spec): LayoutState {
+/**
+ * `null` : pas de spec à placer pour l'instant (par exemple pendant l'ouverture d'un lien de
+ * partage) ; rien n'est calculé ni affiché, pour ne pas montrer une autre spec à la place.
+ */
+export function useLayout(spec: Spec | null): LayoutState {
   const [done, setDone] = useState<{ spec: Spec; layout: Layout } | null>(null);
   const [failed, setFailed] = useState<{ spec: Spec; message: string } | null>(null);
 
   useEffect(() => {
+    if (spec === null) return;
     let cancelled = false;
     computeLayout(spec).then(
       (layout) => {
@@ -33,6 +38,7 @@ export function useLayout(spec: Spec): LayoutState {
     };
   }, [spec]);
 
+  if (spec === null) return { status: "loading" };
   if (failed?.spec === spec) return { status: "error", message: failed.message };
   if (done) return { status: "ready", ...done };
   return { status: "loading" };

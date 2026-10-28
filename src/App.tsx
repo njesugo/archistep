@@ -29,13 +29,15 @@ export default function App() {
   const [theme, setTheme] = useState<Theme>(() =>
     resolveTheme(readStoredTheme(), window.matchMedia("(prefers-color-scheme: dark)").matches),
   );
-  const editor = useSpecEditor();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  // Un lien de partage illisible : on ouvre le tiroir, où l'erreur est expliquée.
+  const openDrawer = useCallback(() => setDrawerOpen(true), []);
+  const editor = useSpecEditor({ onLinkError: openDrawer });
   const [presenting, setPresenting] = useState(false);
 
   // Tout ce qui est affiché vient de la spec à laquelle appartient le placement : pendant un
   // nouveau calcul, l'ancien schéma reste à l'écran, cohérent avec sa légende.
-  const layout = useLayout(editor.spec);
+  const layout = useLayout(editor.opening ? null : editor.spec);
   const spec = layout.status === "ready" ? layout.spec : editor.spec;
   const parents = useMemo(() => parentMap(spec), [spec]);
   const allPositions = useMemo(() => positions(spec), [spec]);
@@ -133,6 +135,16 @@ export default function App() {
     setOverride(null);
   }
 
+  if (editor.opening) {
+    return (
+      <main className="page">
+        <p className="stage-msg" role="status">
+          Ouverture du lien de partage…
+        </p>
+      </main>
+    );
+  }
+
   if (!step) return null;
 
   return (
@@ -191,6 +203,7 @@ export default function App() {
         onTextChange={editor.setText}
         errors={editor.errors}
         spec={editor.spec}
+        fromLink={editor.fromLink}
         onImport={(text) => afterLoad(editor.load(text))}
         onExport={() =>
           downloadText(
