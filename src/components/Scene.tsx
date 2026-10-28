@@ -212,14 +212,15 @@ function GroupView({
 
 /**
  * `lit` : ids mis en valeur à l'étape courante ; les autres sont atténués.
- * Sans `lit` (null), tout est affiché normalement. `flow` fait circuler des paquets sur un lien.
+ * Sans `lit` (null), tout est affiché normalement. `flows` font circuler des paquets sur leurs
+ * liens ; ceux dont le lien n'est pas mis en valeur sont atténués comme lui.
  */
 export function Scene({
   spec,
   layout,
   lit = null,
   revealed = null,
-  flow = null,
+  flows = [],
   frame,
   animateCamera = true,
   aspect,
@@ -229,8 +230,8 @@ export function Scene({
   lit?: ReadonlySet<string> | null;
   /** Construction progressive : seuls ces ids sont visibles (null : tout l'est). */
   revealed?: ReadonlySet<string> | null;
-  /** Flux animé de l'étape courante ; absent quand le mouvement est réduit. */
-  flow?: ResolvedFlow | null;
+  /** Flux animés ; vide quand le mouvement est réduit. */
+  flows?: ResolvedFlow[];
   /** Cadre visé par la caméra (viewBox) ; par défaut, tout le schéma. */
   frame?: Frame;
   /** Faux : le cadre change sans déplacement progressif (mouvement réduit). */
@@ -294,15 +295,19 @@ export function Scene({
           titleLimit={titleLimits.get(group.id) ?? Infinity}
         />
       ))}
-      {flow?.pulse && (
-        <rect
-          className="pulse"
-          x={flow.pulse.x}
-          y={flow.pulse.y}
-          width={flow.pulse.width}
-          height={flow.pulse.height}
-          rx={16}
-        />
+      {flows.map(
+        (flow) =>
+          flow.pulse && (
+            <rect
+              key={`pulse-${flow.edgeId}`}
+              className={lit && !lit.has(flow.edgeId) ? "pulse dim" : "pulse"}
+              x={flow.pulse.x}
+              y={flow.pulse.y}
+              width={flow.pulse.width}
+              height={flow.pulse.height}
+              rx={16}
+            />
+          ),
       )}
       {spec.edges.map((edge) => {
         const points = layout.edges[edge.id];
@@ -365,7 +370,9 @@ export function Scene({
           </g>
         );
       })}
-      {flow && <FlowPackets flow={flow} />}
+      {flows.map((flow) => (
+        <FlowPackets key={flow.edgeId} flow={flow} dimmed={lit !== null && !lit.has(flow.edgeId)} />
+      ))}
     </svg>
   );
 }

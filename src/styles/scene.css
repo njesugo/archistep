@@ -79,6 +79,10 @@
 .packet {
   fill: var(--c);
 }
+/* Flux d'un lien qui n'est pas mis en valeur : il continue, en retrait. */
+.pulse.dim {
+  display: none;
+}
 .pulse {
   fill: none;
   stroke: var(--g-teal);

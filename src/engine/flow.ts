@@ -58,6 +58,19 @@ export function resolveFlow(spec: Spec, step: Step, layout: Layout): ResolvedFlo
   };
 }
 
+/**
+ * Tous les flux de la spec, un par lien (le premier trouvé l'emporte) : l'animation continue les
+ * fait tourner ensemble, sans attendre l'étape qui les met en scène.
+ */
+export function resolveAllFlows(spec: Spec, layout: Layout): ResolvedFlow[] {
+  const flows = new Map<string, ResolvedFlow>();
+  for (const step of spec.steps) {
+    const flow = resolveFlow(spec, step, layout);
+    if (flow && !flows.has(flow.edgeId)) flows.set(flow.edgeId, flow);
+  }
+  return [...flows.values()];
+}
+
 // --- géométrie du tracé (polyligne) ---
 
 export function polylineLength(points: Point[]): number {

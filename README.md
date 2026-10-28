@@ -22,6 +22,8 @@ Outil web qui transforme une description d'architecture de données en schéma a
 | `P`             | Mode présentation (bascule)                        |
 | `L`             | Pointeur laser (bascule)                           |
 | `A`             | Lecture automatique (bascule)                      |
+| `C`             | Animation continue (bascule)                       |
+| `F`             | Schéma en plein écran (bascule)                    |
 | `Échap`         | Quitter le mode présentation, ou fermer le tiroir  |
 
 Les raccourcis sont ignorés pendant la saisie dans l'éditeur.
@@ -38,6 +40,12 @@ Le bouton **Lecture auto** (ou la touche `A`, qui marche aussi en mode présenta
 - **Vitesse** (liste à côté du bouton) : lente (×1,5), normale ou rapide (×0,65).
 - **Arrêt** : à la fin (un nouvel appui repart du début), ou dès que tu navigues à la main (Précédent, Suivant, flèches, pastille, `0`) : on reprend la main. La lecture est suspendue (« en pause ») tant que le tiroir Spec ou la fenêtre de génération sont ouverts, puis reprend.
 - **Code** : `src/engine/autoplay.ts` (durées), `src/useAutoAdvance.ts` (un seul minuteur, annulé dès qu'on change d'état ou qu'on arrête : aucune fuite).
+
+### Animation continue et plein écran
+
+**Animation continue** (bouton ou touche `C`) montre le schéma entier, **sans zoom**, et le fait vivre en boucle : les étapes s'éclairent à tour de rôle (celles qui éclairent quelque chose ; la vue d'ensemble est sautée), la dernière enchaînant sur la première, et **tous les flux** de la spec tournent ensemble en permanence (ceux de l'étape éclairée en pleine intensité, les autres en retrait). Chaque étape dure 4 s, multipliées par la vitesse choisie (la même liste que pour la lecture auto). La légende et les panneaux restent ceux de l'étape 1, et la construction progressive est ignorée : toutes les briques restent visibles. Elle est exclusive avec la lecture auto, suspendue tant que le tiroir ou la fenêtre de génération sont ouverts, et coupée par toute navigation à la main. Avec `prefers-reduced-motion`, les étapes s'éclairent toujours mais sans paquets ni impulsions.
+
+Le bouton **plein écran** (coin haut droit du schéma, ou touche `F`) affiche **le schéma global seul** à la taille de l'écran : aucune légende ni barre de contrôle, sans zoom, tout le schéma ajusté à l'écran. En plein écran, le schéma est neutre et fixe, sauf si l'animation continue tourne (elle fonctionne aussi). Le pointeur laser y reste visible ; `Échap` ou le bouton de sortie (discret) quitte le plein écran. Le bouton se cache en mode présentation (la touche `F` y marche toujours) et là où le navigateur n'a pas de plein écran (iPhone, par exemple).
 
 ### Pointeur laser
 

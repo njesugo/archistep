@@ -103,6 +103,8 @@ describe("bouton Lecture auto", () => {
         onToggleLaser={() => {}}
         autoplay={autoplay}
         onTogglePlay={() => {}}
+        animation="off"
+        onToggleAnimation={() => {}}
         speed={speed}
         onSpeed={() => {}}
         onPrev={() => {}}
@@ -125,7 +127,7 @@ describe("bouton Lecture auto", () => {
 
   it("propose les trois vitesses, avec la vitesse courante sélectionnée", () => {
     const html = render("off", "fast");
-    expect(html).toContain('aria-label="Vitesse de la lecture auto"');
+    expect(html).toContain("Vitesse de la lecture auto et de l’animation continue");
     expect(html).toMatch(/<option value="slow">Vitesse : lente<\/option>/);
     expect(html).toMatch(/<option value="fast" selected="">Vitesse : rapide<\/option>/);
   });

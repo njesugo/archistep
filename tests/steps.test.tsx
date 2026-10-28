@@ -71,6 +71,10 @@ describe("navigation", () => {
     expect(keyAction("L", false)).toBe("laser");
     expect(keyAction("a", false)).toBe("play");
     expect(keyAction("A", false)).toBe("play");
+    expect(keyAction("c", false)).toBe("animate");
+    expect(keyAction("C", false)).toBe("animate");
+    expect(keyAction("f", false)).toBe("fullscreen");
+    expect(keyAction("F", false)).toBe("fullscreen");
     expect(keyAction("z", false)).toBeNull();
   });
 
@@ -97,6 +101,8 @@ describe("Controls", () => {
         onToggleLaser={() => {}}
         autoplay="off"
         onTogglePlay={() => {}}
+        animation="off"
+        onToggleAnimation={() => {}}
         speed="normal"
         onSpeed={() => {}}
         onPrev={() => {}}
@@ -133,6 +139,8 @@ describe("Controls", () => {
           onToggleLaser={() => {}}
           autoplay="off"
           onTogglePlay={() => {}}
+          animation="off"
+          onToggleAnimation={() => {}}
           speed="normal"
           onSpeed={() => {}}
           onPrev={() => {}}

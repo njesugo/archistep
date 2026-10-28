@@ -233,7 +233,9 @@ describe("Scene avec flux", () => {
   it("dessine les paquets et l'impulsion de l'orchestration", async () => {
     const layout = await computeLayout(spec);
     const flow = resolveFlow(spec, step("orchestration"), layout);
-    const html = renderToStaticMarkup(<Scene spec={spec} layout={layout} flow={flow} />);
+    const html = renderToStaticMarkup(
+      <Scene spec={spec} layout={layout} flows={flow ? [flow] : []} />,
+    );
     expect(html.match(/class="packet"/g)).toHaveLength(2);
     expect(html).toContain('class="pulse"');
     // les paquets sont dessinés en dernier, au-dessus des nœuds
