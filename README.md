@@ -2,7 +2,7 @@
 
 Outil web qui transforme une description d'architecture de données en schéma animé, présenté étape par étape, pour des vidéos pédagogiques. Cahier des charges : [docs/SPEC.md](docs/SPEC.md). Prototype de référence : [docs/reference/prototype.html](docs/reference/prototype.html).
 
-**État : jalon M0 (squelette et déploiement).** Pour l'instant, une page d'accueil avec thèmes clair et sombre.
+**État : jalon M1 (spec et validation).** La spec JSON est définie et validée (`src/spec/`), avec un exemple intégré (`src/examples/youtube-pipeline.json`). Pas encore de rendu : la page d'accueil est un squelette avec thèmes clair et sombre.
 
 **Site déployé :** <https://archistep.netlify.app/>
 
@@ -51,3 +51,10 @@ Connexion du dépôt (une seule fois) :
 ## CI
 
 [.github/workflows/ci.yml](.github/workflows/ci.yml) lance lint, contrôle du format, tests et build sur chaque push et pull request. Elle n'intervient pas dans le déploiement.
+
+## Spec JSON
+
+- `src/spec/schema.ts` : schéma Zod, types déduits.
+- `src/spec/checkReferences.ts` : contrôles croisés (ids uniques, références, hiérarchie, indices de surlignage).
+- `src/spec/validate.ts` : `validateSpec(objet)` et `parseSpecJson(texte)` renvoient la spec ou une liste d'erreurs lisibles (élément, champ, raison).
+- Écart avec le cahier des charges : une étape a `panels` (liste) et non `panel`, et `highlight` accepte un indice `panel` (0 par défaut). Voir `docs/SPEC.md`, section 6.

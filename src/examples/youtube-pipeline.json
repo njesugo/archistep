@@ -1,0 +1,358 @@
+{
+  "version": 1,
+  "meta": {
+    "title": "De YouTube Analytics au tableau de bord",
+    "subtitle": "Pipeline de données · exemple fictif",
+    "language": "fr",
+    "buildMode": "all"
+  },
+  "nodes": [
+    {
+      "id": "yt",
+      "label": "YouTube",
+      "sub": "Analytics · API",
+      "icon": "youtube",
+      "kind": "source"
+    },
+    {
+      "id": "fv",
+      "label": "Fivetran",
+      "sub": "connecteur géré",
+      "icon": "fivetran",
+      "kind": "ingestion"
+    },
+    {
+      "id": "br",
+      "label": "Databricks",
+      "sub": "BRONZE · brut",
+      "icon": "databricks",
+      "kind": "storage",
+      "layer": "bronze"
+    },
+    {
+      "id": "sv",
+      "label": "Databricks",
+      "sub": "SILVER · nettoyé",
+      "icon": "databricks",
+      "kind": "storage",
+      "layer": "silver"
+    },
+    {
+      "id": "gd",
+      "label": "Databricks",
+      "sub": "GOLD · agrégé",
+      "icon": "databricks",
+      "kind": "storage",
+      "layer": "gold"
+    }
+  ],
+  "groups": [
+    {
+      "id": "ing",
+      "label": "Ingestion",
+      "color": "blue",
+      "children": ["yt", "fv", "br"]
+    },
+    {
+      "id": "dbt",
+      "label": "dbt · Transformation",
+      "icon": "dbt",
+      "color": "orange",
+      "children": ["sv", "gd"]
+    },
+    {
+      "id": "af",
+      "label": "Apache Airflow · Orchestration",
+      "icon": "airflow",
+      "color": "teal",
+      "children": ["dbt"]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "yt",
+      "to": "fv"
+    },
+    {
+      "id": "e2",
+      "from": "fv",
+      "to": "br"
+    },
+    {
+      "id": "e3",
+      "from": "br",
+      "to": "sv"
+    },
+    {
+      "id": "e4",
+      "from": "sv",
+      "to": "gd"
+    },
+    {
+      "id": "t1",
+      "from": "af",
+      "to": "dbt",
+      "style": "trigger",
+      "label": "déclenche"
+    }
+  ],
+  "steps": [
+    {
+      "id": "apercu",
+      "title": "Vue d’ensemble",
+      "text": "Une donnée part de YouTube Analytics, passe par Fivetran, arrive brute dans Databricks, puis dbt la nettoie et l’agrège pendant qu’Airflow supervise le tout. Appuie sur Suivant pour la suivre pas à pas.",
+      "focus": ["ing", "dbt", "af", "yt", "fv", "br", "sv", "gd", "e1", "e2", "e3", "e4", "t1"],
+      "panels": [
+        {
+          "type": "list",
+          "title": "Les trois couches de Databricks",
+          "items": [
+            {
+              "label": "Bronze",
+              "text": "brut, tel que reçu de la source"
+            },
+            {
+              "label": "Silver",
+              "text": "nettoyé, typé, sans doublon"
+            },
+            {
+              "label": "Gold",
+              "text": "agrégé en indicateurs, prêt pour l’analyse"
+            },
+            {
+              "label": "Données",
+              "text": "toutes les données affichées ici sont fictives."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "source",
+      "title": "La source",
+      "text": "YouTube Analytics expose les statistiques de la chaîne (vues, minutes regardées, abonnés) à travers une API. Les chiffres sont à jour, mais dans un format pensé pour les machines, pas pour l’analyse.",
+      "focus": ["yt"],
+      "zoom": ["yt"],
+      "panels": [
+        {
+          "type": "code",
+          "title": "Réponse de l’API · exemple fictif",
+          "language": "json",
+          "content": "{\n  \"channel_id\": \"UC_demo\",\n  \"day\": \"2026-10-27\",\n  \"views\": 1284,\n  \"estimatedMinutesWatched\": 3912\n}"
+        }
+      ]
+    },
+    {
+      "id": "ingestion",
+      "title": "L’ingestion",
+      "text": "Fivetran est un connecteur géré. Il interroge l’API à intervalle régulier et copie les données vers Databricks, sans code à écrire. Il ajoute ses propres colonnes pour savoir quand chaque ligne est arrivée.",
+      "focus": ["ing", "yt", "e1", "fv"],
+      "zoom": ["yt", "fv"],
+      "flow": {
+        "edge": "e1",
+        "shape": "dot",
+        "count": 4
+      },
+      "panels": [
+        {
+          "type": "code",
+          "title": "La même ligne après le passage de Fivetran",
+          "language": "text",
+          "content": "  channel_id               \"UC_demo\"\n  day                      \"2026-10-27\"\n  views                    1284\n  estimatedMinutesWatched  3912\n+ _fivetran_synced         2026-10-28 02:00\n+ _fivetran_deleted        false",
+          "note": "Les lignes marquées + sont ajoutées par le connecteur."
+        }
+      ]
+    },
+    {
+      "id": "bronze",
+      "title": "La couche Bronze",
+      "text": "Les données arrivent telles quelles, sans correction. On les garde brutes pour pouvoir tout rejouer si une règle change plus tard. Regarde ce qui n’est pas encore propre : la même journée apparaît deux fois, car la valeur est révisée après coup.",
+      "focus": ["ing", "fv", "e2", "br"],
+      "zoom": ["fv", "br"],
+      "flow": {
+        "edge": "e2",
+        "shape": "dot",
+        "count": 4
+      },
+      "panels": [
+        {
+          "type": "table",
+          "title": "bronze.youtube_stats",
+          "layer": "bronze",
+          "columns": ["day", "channel_id", "views", "estimatedMinutesWatched", "_fivetran_synced"],
+          "rows": [
+            ["2026-10-27 00:00:00", "UC_demo", "1 270", "3 880", "2026-10-27 22:00"],
+            ["2026-10-27 00:00:00", "UC_demo", "1 284", "3 912", "2026-10-28 02:00"],
+            ["2026-10-26 00:00:00", "UC_demo", "1 190", "3 405", "2026-10-27 02:00"],
+            ["2026-10-25 00:00:00", "UC_demo", "1 047", "3 120", "2026-10-26 02:00"]
+          ],
+          "numericColumns": [2, 3],
+          "note": "Les deux premières lignes sont un doublon sur la journée du 27 octobre."
+        }
+      ]
+    },
+    {
+      "id": "orchestration",
+      "title": "L’orchestration",
+      "text": "Airflow est le chef d’orchestre. Quand l’ingestion est terminée, il déclenche dbt, tâche après tâche, dans le bon ordre.",
+      "focus": ["af", "dbt", "t1"],
+      "zoom": ["af"],
+      "flow": {
+        "edge": "t1",
+        "shape": "dot",
+        "count": 2
+      },
+      "panels": [
+        {
+          "type": "list",
+          "title": "Ce qu’Airflow apporte",
+          "items": [
+            {
+              "label": "Ordre",
+              "text": "chaque tâche attend que la précédente ait réussi."
+            },
+            {
+              "label": "Reprise",
+              "text": "si une tâche échoue, Airflow peut la relancer sans refaire tout le reste."
+            },
+            {
+              "label": "Planification",
+              "text": "le DAG s’exécute tout seul, par exemple chaque nuit, et garde l’historique de chaque exécution."
+            }
+          ]
+        },
+        {
+          "type": "dag",
+          "title": "DAG youtube_analytics_quotidien · exemple",
+          "tasks": [
+            {
+              "name": "sync_fivetran",
+              "state": "ok"
+            },
+            {
+              "name": "dbt_run_silver",
+              "state": "wait"
+            },
+            {
+              "name": "dbt_run_gold",
+              "state": "wait"
+            },
+            {
+              "name": "dbt_test",
+              "state": "wait"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "silver",
+      "title": "La couche Silver",
+      "text": "dbt lit la couche Bronze et applique des requêtes SQL : le doublon disparaît en gardant la synchronisation la plus récente, les colonnes sont renommées, la date est convertie. La donnée devient fiable.",
+      "focus": ["af", "dbt", "br", "e3", "sv"],
+      "zoom": ["br", "sv"],
+      "flow": {
+        "edge": "e3",
+        "shape": "square",
+        "count": 4
+      },
+      "panels": [
+        {
+          "type": "table",
+          "title": "silver.youtube_stats",
+          "layer": "silver",
+          "columns": ["day (DATE)", "channel_id", "views", "minutes_watched"],
+          "rows": [
+            ["2026-10-27", "UC_demo", "1 284", "3 912"],
+            ["2026-10-26", "UC_demo", "1 190", "3 405"],
+            ["2026-10-25", "UC_demo", "1 047", "3 120"]
+          ],
+          "numericColumns": [2, 3]
+        },
+        {
+          "type": "code",
+          "title": "Requête dbt · silver",
+          "language": "sql",
+          "content": "select\n  cast(day as date)        as day,\n  channel_id,\n  views,\n  estimatedMinutesWatched  as minutes_watched\nfrom bronze.youtube_stats\nqualify row_number() over (\n  partition by day, channel_id\n  order by _fivetran_synced desc) = 1"
+        },
+        {
+          "type": "dag",
+          "title": "DAG youtube_analytics_quotidien · exemple",
+          "tasks": [
+            {
+              "name": "sync_fivetran",
+              "state": "ok"
+            },
+            {
+              "name": "dbt_run_silver",
+              "state": "run"
+            },
+            {
+              "name": "dbt_run_gold",
+              "state": "wait"
+            },
+            {
+              "name": "dbt_test",
+              "state": "wait"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gold",
+      "title": "La couche Gold",
+      "text": "Toujours avec dbt, on agrège les données propres en indicateurs métier : ici les vues et le temps de visionnage par semaine. Les tableaux de bord lisent cette couche. Des tests dbt vérifient la qualité avant de valider.",
+      "focus": ["af", "dbt", "sv", "e4", "gd"],
+      "zoom": ["sv", "gd"],
+      "flow": {
+        "edge": "e4",
+        "shape": "bar",
+        "count": 3
+      },
+      "panels": [
+        {
+          "type": "table",
+          "title": "gold.youtube_stats_hebdo",
+          "layer": "gold",
+          "columns": ["semaine", "channel_id", "vues", "minutes_visionnees", "minutes_par_vue"],
+          "rows": [
+            ["2026-10-26 (en cours)", "UC_demo", "2 474", "7 317", "3,0"],
+            ["2026-10-19", "UC_demo", "8 214", "23 400", "2,8"],
+            ["2026-10-12", "UC_demo", "7 410", "22 400", "3,0"]
+          ],
+          "numericColumns": [2, 3, 4]
+        },
+        {
+          "type": "code",
+          "title": "Requête dbt · gold",
+          "language": "sql",
+          "content": "select\n  date_trunc('week', day)  as semaine,\n  channel_id,\n  sum(views)               as vues,\n  sum(minutes_watched)     as minutes_visionnees,\n  round(sum(minutes_watched) / sum(views), 1) as minutes_par_vue\nfrom silver.youtube_stats\ngroup by 1, 2"
+        },
+        {
+          "type": "dag",
+          "title": "DAG youtube_analytics_quotidien · exemple",
+          "tasks": [
+            {
+              "name": "sync_fivetran",
+              "state": "ok"
+            },
+            {
+              "name": "dbt_run_silver",
+              "state": "ok"
+            },
+            {
+              "name": "dbt_run_gold",
+              "state": "run"
+            },
+            {
+              "name": "dbt_test",
+              "state": "wait"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
