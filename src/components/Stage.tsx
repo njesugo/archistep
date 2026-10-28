@@ -1,21 +1,19 @@
 import type { Frame } from "../engine/camera";
 import type { ResolvedFlow } from "../engine/flow";
-import type { Spec } from "../spec/schema";
+import type { Layout } from "../engine/layout";
 import type { LayoutState } from "../useLayout";
 import { Scene } from "./Scene";
 
-/** Cadre du schéma : placement en cours, erreur, ou scène. */
-export function Stage({
-  spec,
-  layout,
-  lit,
-  revealed,
-  flow,
-  frame,
-  animateCamera,
-  aspect,
-}: {
-  spec: Spec;
+// Chaque nouveau placement redémarre la scène : la caméra ne glisse pas d'un schéma à un autre.
+const layoutIds = new WeakMap<Layout, number>();
+let nextLayoutId = 0;
+function layoutId(layout: Layout): number {
+  let id = layoutIds.get(layout);
+  if (id === undefined) layoutIds.set(layout, (id = nextLayoutId++));
+  return id;
+}
+
+type Props = {
   layout: LayoutState;
   lit: ReadonlySet<string> | null;
   revealed: ReadonlySet<string> | null;
@@ -23,13 +21,17 @@ export function Stage({
   frame: Frame | undefined;
   animateCamera: boolean;
   aspect: number | undefined;
-}) {
+};
+
+/** Cadre du schéma : placement en cours, erreur, ou scène. */
+export function Stage({ layout, lit, revealed, flow, frame, animateCamera, aspect }: Props) {
   return (
     <section className="stage" aria-label="Schéma de l’architecture">
       <div className="scroll">
         {layout.status === "ready" && (
           <Scene
-            spec={spec}
+            key={layoutId(layout.layout)}
+            spec={layout.spec}
             layout={layout.layout}
             lit={lit}
             revealed={revealed}

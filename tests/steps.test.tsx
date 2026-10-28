@@ -83,6 +83,8 @@ describe("Controls", () => {
         atEnd={index === spec.steps.length - 1}
         progressive={false}
         onToggleProgressive={() => {}}
+        drawerOpen={false}
+        onToggleDrawer={() => {}}
         onPrev={() => {}}
         onNext={() => {}}
         onGoTo={() => {}}
@@ -110,6 +112,8 @@ describe("Controls", () => {
           atEnd={false}
           progressive={progressive}
           onToggleProgressive={() => {}}
+          drawerOpen={false}
+          onToggleDrawer={() => {}}
           onPrev={() => {}}
           onNext={() => {}}
           onGoTo={() => {}}

@@ -104,7 +104,17 @@ export function parseSpecJson(text: string): ValidationResult {
     data = JSON.parse(text);
   } catch (e) {
     const reason = e instanceof Error ? e.message : String(e);
-    return { ok: false, errors: [{ path: [], message: `JSON invalide : ${reason}` }] };
+    const offset = /position (\d+)/.exec(reason)?.[1];
+    return {
+      ok: false,
+      errors: [
+        {
+          path: [],
+          message: `JSON invalide : ${reason}`,
+          ...(offset !== undefined && { offset: Number(offset) }),
+        },
+      ],
+    };
   }
   return validateSpec(data);
 }

@@ -5,6 +5,8 @@ export type SpecError = {
   path: (string | number)[];
   /** Phrase complète : élément concerné, champ, raison. */
   message: string;
+  /** Position dans le texte JSON, quand l'erreur vient de la syntaxe (le chemin est alors vide). */
+  offset?: number;
 };
 
 type Kind = "node" | "group" | "edge";
