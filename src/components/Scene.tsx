@@ -2,6 +2,8 @@ import type { CSSProperties } from "react";
 import { edgeLabelAnchor, pathFromPoints } from "../engine/geometry";
 import type { GroupRect, Layout, Rect } from "../engine/layout";
 import { GenericIcon } from "../icons/generic";
+import { FlowPackets } from "./FlowPackets";
+import type { ResolvedFlow } from "../engine/flow";
 import { hasLogo, useIcon, type ResolvedIcon } from "../icons/registry";
 import type { Spec, SpecGroup, SpecNode } from "../spec/schema";
 import "../styles/scene.css";
@@ -131,16 +133,19 @@ function GroupView({
 
 /**
  * `lit` : ids mis en valeur à l'étape courante ; les autres sont atténués.
- * Sans `lit` (null), tout est affiché normalement.
+ * Sans `lit` (null), tout est affiché normalement. `flow` fait circuler des paquets sur un lien.
  */
 export function Scene({
   spec,
   layout,
   lit = null,
+  flow = null,
 }: {
   spec: Spec;
   layout: Layout;
   lit?: ReadonlySet<string> | null;
+  /** Flux animé de l'étape courante ; absent quand le mouvement est réduit. */
+  flow?: ResolvedFlow | null;
 }) {
   // Ordre de dessin : groupes (du plus extérieur au plus intérieur), liens, nœuds.
   const groups = spec.groups
@@ -173,6 +178,16 @@ export function Scene({
       {groups.map(({ group, rect }) => (
         <GroupView key={group.id} group={group} rect={rect} lit={lit} />
       ))}
+      {flow?.pulse && (
+        <rect
+          className="pulse"
+          x={flow.pulse.x}
+          y={flow.pulse.y}
+          width={flow.pulse.width}
+          height={flow.pulse.height}
+          rx={16}
+        />
+      )}
       {spec.edges.map((edge) => {
         const points = layout.edges[edge.id];
         if (!points) return null;
@@ -196,6 +211,7 @@ export function Scene({
         const rect = layout.nodes[node.id];
         return rect ? <NodeView key={node.id} node={node} rect={rect} lit={lit} /> : null;
       })}
+      {flow && <FlowPackets flow={flow} />}
     </svg>
   );
 }

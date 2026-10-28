@@ -2,7 +2,7 @@
 
 Outil web qui transforme une description d'architecture de données en schéma animé, présenté étape par étape, pour des vidéos pédagogiques. Cahier des charges : [docs/SPEC.md](docs/SPEC.md). Prototype de référence : [docs/reference/prototype.html](docs/reference/prototype.html).
 
-**État : jalon M4 (pas à pas).** L'exemple se parcourt étape par étape : mise en valeur, légende et panneaux de données (table, code, liste, DAG). Pas encore d'animation ni de zoom caméra.
+**État : jalon M5 (flux animés).** Pas à pas avec paquets qui circulent le long des liens et impulsion de déclenchement. Pas encore de zoom caméra.
 
 **Site déployé :** <https://archistep.netlify.app/>
 
@@ -78,3 +78,9 @@ Remarque : chaque icône simple-icons est un petit fichier chargé à la demande
 - **Mise en valeur** (`src/engine/state.ts`, `litIds`) : les ids de `focus` sont éclairés, les autres atténués (25 %). Les groupes ancêtres d'un élément éclairé restent visibles ; pour un lien, ce sont les groupes qui contiennent ses deux extrémités. Un `focus` vide n'atténue rien.
 - **Navigation** : boutons Précédent et Suivant, pastilles numérotées (`aria-current="step"` sur l'étape courante), et au clavier : flèche droite ou espace = suivant, flèche gauche = précédent, `0` ou `Début` = première étape. Les touches sont ignorées dans un champ de saisie, et Espace sur un bouton ne l'active qu'une fois.
 - **Panneaux** : une étape affiche tous ses `panels`, dans l'ordre (table, code, liste, DAG).
+
+## Flux animés
+
+Quand une étape a un `flow`, des paquets circulent en boucle le long du lien (`src/engine/flow.ts`, `FlowPackets`). La position se calcule en fonction du temps sur la polyligne du lien, sans lire le DOM. Sans précision dans la spec, la forme et la couleur suivent la couche de la destination (brut = points, nettoyé = carrés, agrégé = barres) ; à défaut, la couleur est celle du plus petit groupe qui contient les deux extrémités. Un lien de déclenchement (`style: "trigger"`) fait en plus pulser sa destination. La durée d'un trajet est proportionnelle à la longueur du lien (1,2 à 3,2 s).
+
+L'animation tourne avec `requestAnimationFrame` (une seule demande en attente) et s'arrête au changement d'étape. Avec `prefers-reduced-motion`, il n'y a ni paquets ni impulsion.
