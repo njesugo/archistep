@@ -141,16 +141,35 @@ export default function App() {
     advanceTour,
     tourIndex,
   );
-  const toggleAnimate = useCallback(() => {
-    if (animating) {
-      setAnimating(false);
-      return;
-    }
+  const startAnimation = useCallback(() => {
     setPlaying(false);
     first(); // la légende et les panneaux restent ceux de l'étape 1
     setTourIndex(0);
     setAnimating(true);
-  }, [animating, first]);
+  }, [first]);
+  const toggleAnimate = useCallback(() => {
+    if (animating) setAnimating(false);
+    else startAnimation();
+  }, [animating, startAnimation]);
+
+  // Le plein écran lance l'animation continue (les flux circulent), et l'arrête à la sortie
+  // si c'est lui qui l'a lancée. Déjà en marche, elle n'est pas touchée.
+  const [startedByFullscreen, setStartedByFullscreen] = useState(false);
+  const [wasFullscreen, setWasFullscreen] = useState(false);
+  if (wasFullscreen !== fullscreen.active) {
+    setWasFullscreen(fullscreen.active);
+    if (!fullscreen.active && startedByFullscreen) {
+      setStartedByFullscreen(false);
+      setAnimating(false);
+    }
+  }
+  const toggleFullscreen = useCallback(() => {
+    if (!fullscreen.active && !animating) {
+      startAnimation();
+      setStartedByFullscreen(true);
+    }
+    fullscreen.toggle();
+  }, [fullscreen, animating, startAnimation]);
 
   const lit = useMemo(() => {
     if (animating) return tourStep ? litIds(spec, tourStep) : null;
@@ -256,7 +275,7 @@ export default function App() {
       laser: toggleLaser,
       play: togglePlay,
       animate: toggleAnimate,
-      fullscreen: fullscreen.toggle,
+      fullscreen: toggleFullscreen,
       zoomIn: zoom.zoomIn,
       zoomOut: zoom.zoomOut,
     }),
@@ -273,7 +292,7 @@ export default function App() {
       toggleLaser,
       togglePlay,
       toggleAnimate,
-      fullscreen.toggle,
+      toggleFullscreen,
     ],
   );
   useShortcuts(shortcuts);
@@ -323,7 +342,7 @@ export default function App() {
           fullscreen={{
             supported: fullscreen.supported,
             active: fullscreen.active,
-            onToggle: fullscreen.toggle,
+            onToggle: toggleFullscreen,
             showButton: !presenting,
           }}
           zoom={{ zoomed: zoom.zoomed, onReset: zoom.reset }}
