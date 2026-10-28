@@ -9,16 +9,35 @@ body {
   font-size: 15px;
   line-height: 1.55;
 }
-.home {
-  max-width: 720px;
+.page {
+  max-width: 1120px;
   margin: 0 auto;
   min-height: 100vh;
   padding: 24px max(16px, env(safe-area-inset-right, 0px)) 40px
     max(16px, env(safe-area-inset-left, 0px));
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  justify-content: center;
+  gap: 20px;
+}
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.stage {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.scroll {
+  overflow-x: auto;
+}
+.stage-msg {
+  margin: 0;
+  padding: 48px 16px;
+  text-align: center;
+  color: var(--muted);
 }
 .eyebrow {
   font: 500 12px var(--mono);
@@ -31,11 +50,6 @@ h1 {
   font: 700 clamp(26px, 4.2vw, 38px) / 1.1 var(--display);
   margin: 0;
   text-wrap: balance;
-}
-.lede {
-  margin: 0;
-  color: var(--muted);
-  max-width: 56ch;
 }
 button {
   align-self: flex-start;

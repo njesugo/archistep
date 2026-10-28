@@ -2,7 +2,7 @@
 
 Outil web qui transforme une description d'architecture de données en schéma animé, présenté étape par étape, pour des vidéos pédagogiques. Cahier des charges : [docs/SPEC.md](docs/SPEC.md). Prototype de référence : [docs/reference/prototype.html](docs/reference/prototype.html).
 
-**État : jalon M2 (placement).** La spec JSON est validée (`src/spec/`) et placée automatiquement avec ELK (`src/engine/layout.ts`). Pas encore de rendu : la page d'accueil est un squelette avec thèmes clair et sombre.
+**État : jalon M3 (rendu statique et logos).** La spec JSON est validée, placée avec ELK et dessinée en SVG (groupes, liens, nœuds, logos), en thème clair et sombre. Pas encore de navigation pas à pas.
 
 **Site déployé :** <https://archistep.netlify.app/>
 
@@ -62,3 +62,13 @@ Connexion du dépôt (une seule fois) :
 ## Placement
 
 `computeLayout(spec)` (`src/engine/layout.ts`) renvoie, de façon asynchrone, un rectangle absolu par nœud et par groupe (avec la profondeur du groupe) et une polyligne par lien. Le calcul utilise ELK (`elkjs`, algorithme `layered`, direction droite, routage orthogonal, groupes imbriqués). Un lien entre un groupe et l'un de ses descendants (par exemple Airflow vers dbt) est dessiné à part, du bord haut du conteneur au bord haut du contenu. Les tests vérifient l'absence de chevauchement, l'inclusion des enfants et un instantané du placement de l'exemple (`npx vitest -u` pour le régénérer après un changement volontaire).
+
+## Rendu et logos
+
+`Scene` (`src/components/Scene.tsx`) dessine un `<svg>` : groupes (du plus extérieur au plus intérieur), liens, nœuds. Les couleurs viennent de `src/styles/tokens.css`.
+
+Les logos se résolvent dans cet ordre : fichier fourni dans `src/assets/logos/` (voir le README de ce dossier), puis `simple-icons`, puis une icône générique selon le `kind`. Un logo fourni n'est jamais modifié ; en thème sombre, il utilise sa variante `.dark` si elle existe, sinon une pastille claire.
+
+`npm run logos:check` indique, pour chaque exemple, d'où vient chaque icône. Dans simple-icons, `youtube`, `databricks` et `airflow` (alias de `apacheairflow`) existent ; `fivetran` et `dbt` n'y sont pas.
+
+Remarque : chaque icône simple-icons est un petit fichier chargé à la demande, ce qui ajoute environ 3 400 fichiers à `dist/`. C'est voulu : n'importe quelle clé reste utilisable sans alourdir le chargement initial.
