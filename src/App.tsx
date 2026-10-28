@@ -19,6 +19,7 @@ import { useLayout } from "./useLayout";
 import { useAutoAdvance } from "./useAutoAdvance";
 import { useReducedMotion } from "./useReducedMotion";
 import { useShortcuts } from "./useShortcuts";
+import { useStageZoom } from "./useStageZoom";
 import { useSpecEditor } from "./useSpecEditor";
 
 // Chargé à la demande : la génération par IA (et son SDK) n'alourdit pas le premier affichage.
@@ -192,6 +193,18 @@ export default function App() {
       : undefined;
   }, [layoutReady, aspect, globalView, fullscreen.active, step, parents, stageWidth]);
 
+  // Plein écran : zoom et déplacement libres, par-dessus la vue d'ensemble.
+  const zoom = useStageZoom({
+    active: fullscreen.active,
+    element: stageEl,
+    layout: layoutReady ?? undefined,
+    aspect,
+    whole: frame,
+    parents,
+  });
+  const cameraFrame = fullscreen.active ? (zoom.frame ?? frame) : frame;
+  const cameraSmooth = !reduceMotion && zoom.smooth;
+
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
@@ -237,18 +250,24 @@ export default function App() {
     () => ({
       next: goNext,
       prev: goPrev,
-      first: goFirst,
+      first: fullscreen.active ? zoom.reset : goFirst,
       present,
       exit: exitPresentation,
       laser: toggleLaser,
       play: togglePlay,
       animate: toggleAnimate,
       fullscreen: fullscreen.toggle,
+      zoomIn: zoom.zoomIn,
+      zoomOut: zoom.zoomOut,
     }),
     [
       goNext,
       goPrev,
       goFirst,
+      fullscreen.active,
+      zoom.reset,
+      zoom.zoomIn,
+      zoom.zoomOut,
       present,
       exitPresentation,
       toggleLaser,
@@ -296,8 +315,8 @@ export default function App() {
           lit={lit}
           revealed={revealed}
           flows={flows}
-          frame={frame}
-          animateCamera={!reduceMotion}
+          frame={cameraFrame}
+          animateCamera={cameraSmooth}
           aspect={aspect}
           measured={stageWidth > 0}
           lang={spec.meta.language}
@@ -307,6 +326,7 @@ export default function App() {
             onToggle: fullscreen.toggle,
             showButton: !presenting,
           }}
+          zoom={{ zoomed: zoom.zoomed, onReset: zoom.reset }}
           ref={stageRef}
         >
           {/* Dans le cadre, pour rester visible en plein écran. */}

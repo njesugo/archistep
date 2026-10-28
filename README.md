@@ -24,6 +24,7 @@ Outil web qui transforme une description d'architecture de données en schéma a
 | `A`             | Lecture automatique (bascule)                      |
 | `C`             | Animation continue (bascule)                       |
 | `F`             | Schéma en plein écran (bascule)                    |
+| `+` / `-`       | Zoom avant / arrière (en plein écran)              |
 | `Échap`         | Quitter le mode présentation, ou fermer le tiroir  |
 
 Les raccourcis sont ignorés pendant la saisie dans l'éditeur.
@@ -45,7 +46,15 @@ Le bouton **Lecture auto** (ou la touche `A`, qui marche aussi en mode présenta
 
 **Animation continue** (bouton ou touche `C`) montre le schéma entier, **sans zoom**, et le fait vivre en boucle : les étapes s'éclairent à tour de rôle (celles qui éclairent quelque chose ; la vue d'ensemble est sautée), la dernière enchaînant sur la première, et **un seul flux est en mouvement à la fois** : celui de l'étape éclairée, en boucle pendant ses 4 s ; les autres liens restent immobiles, et une étape sans flux n'en anime aucun. Chaque étape dure 4 s, multipliées par la vitesse choisie (la même liste que pour la lecture auto). La légende et les panneaux restent ceux de l'étape 1, et la construction progressive est ignorée : toutes les briques restent visibles. Elle est exclusive avec la lecture auto, suspendue tant que le tiroir ou la fenêtre de génération sont ouverts, et coupée par toute navigation à la main. Avec `prefers-reduced-motion`, les étapes s'éclairent toujours mais sans paquets ni impulsions.
 
-Le bouton **plein écran** (coin haut droit du schéma, ou touche `F`) affiche **le schéma global seul** à la taille de l'écran : aucune légende ni barre de contrôle, sans zoom, tout le schéma ajusté à l'écran. En plein écran, le schéma est neutre et fixe, sauf si l'animation continue tourne (elle fonctionne aussi). Le pointeur laser y reste visible ; `Échap` ou le bouton de sortie (discret) quitte le plein écran. Le bouton se cache en mode présentation (la touche `F` y marche toujours) et là où le navigateur n'a pas de plein écran (iPhone, par exemple).
+Le bouton **plein écran** (coin haut droit du schéma, ou touche `F`) affiche **le schéma global seul** à la taille de l'écran : aucune légende ni barre de contrôle, tout le schéma ajusté à l'écran au départ. En plein écran, le schéma est neutre, sauf si l'animation continue tourne (elle fonctionne aussi). Le pointeur laser y reste visible ; `Échap` ou le bouton de sortie (discret) quitte le plein écran. Le bouton se cache en mode présentation (la touche `F` y marche toujours) et là où le navigateur n'a pas de plein écran (iPhone, par exemple).
+
+En plein écran, on peut **zoomer et déplacer** le schéma librement (cette vue est oubliée en quittant le plein écran) :
+
+- **molette** ou **pincement** (pavé tactile, écran tactile) : zoom centré sur le curseur ; **glisser** : déplacer ;
+- **double clic** sur une brique ou un groupe : la caméra s'en approche en douceur ; double clic dans le vide : retour à la vue d'ensemble ;
+- touches `+` et `-` : un pas de zoom ; `0` ou le bouton **Tout** (en bas à droite, affiché seulement quand la vue a changé) : tout le schéma.
+
+Le zoom avant s'arrête à 4 fois la vue d'ensemble ; il n'y a **pas de limite pour s'éloigner**. Le pointeur laser et l'animation continue fonctionnent pendant le zoom.
 
 ### Pointeur laser
 

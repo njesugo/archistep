@@ -122,6 +122,43 @@ export function frameFor(
   };
 }
 
+/** Zoom maximal de l'utilisateur en plein écran, par rapport à la vue d'ensemble. Pas de minimum. */
+export const MAX_USER_ZOOM = 4;
+/** Garde-fou numérique seulement : on peut s'éloigner du schéma d'un facteur 10⁶. */
+const MAX_FRAME_FACTOR = 1e6;
+
+/**
+ * Zoome d'un `factor` (> 1 : on s'approche) en gardant `point` (coordonnées du schéma) fixe à
+ * l'écran. Le rapport du cadre est conservé. Le zoom avant s'arrête à MAX_USER_ZOOM fois la vue
+ * d'ensemble `whole` ; le zoom arrière n'a pas de limite utile.
+ */
+export function zoomAt(frame: Frame, point: Point, factor: number, whole: Frame): Frame {
+  const minWidth = whole.width / MAX_USER_ZOOM;
+  const maxWidth = whole.width * MAX_FRAME_FACTOR;
+  const width = Math.min(Math.max(frame.width / factor, minWidth), maxWidth);
+  const scale = width / frame.width;
+  return {
+    x: point.x - (point.x - frame.x) * scale,
+    y: point.y - (point.y - frame.y) * scale,
+    width,
+    height: frame.height * scale,
+  };
+}
+
+/** Déplace le cadre de (dx, dy), en unités du schéma. */
+export function panFrame(frame: Frame, dx: number, dy: number): Frame {
+  return { ...frame, x: frame.x + dx, y: frame.y + dy };
+}
+
+/** Relit un `viewBox` ; null s'il est absent ou illisible. */
+export function parseViewBox(value: string | null): Frame | null {
+  if (!value) return null;
+  const [x, y, width, height] = value.split(/[\s,]+/).map(Number);
+  if ([x, y, width, height].some((n) => n === undefined || !Number.isFinite(n))) return null;
+  if (!width || !height || width <= 0 || height <= 0) return null;
+  return { x: x!, y: y!, width, height };
+}
+
 export function lerpFrame(from: Frame, to: Frame, t: number): Frame {
   const mix = (a: number, b: number) => a + (b - a) * t;
   return {

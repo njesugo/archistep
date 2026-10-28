@@ -28,6 +28,8 @@ type Props = {
   lang?: string;
   /** Plein écran sur le schéma ; le bouton se cache pendant la présentation (la touche F reste). */
   fullscreen: { supported: boolean; active: boolean; onToggle: () => void; showButton: boolean };
+  /** Vue libre en plein écran : « Tout » revient à la vue d'ensemble quand on s'en est écarté. */
+  zoom?: { zoomed: boolean; onReset: () => void };
   /** Éléments à garder visibles en plein écran (seul ce qui est dans le cadre l'est). */
   children?: ReactNode;
   ref?: Ref<HTMLElement>;
@@ -64,6 +66,7 @@ export function Stage({
   measured,
   lang,
   fullscreen,
+  zoom,
   children,
   ref,
 }: Props) {
@@ -106,6 +109,17 @@ export function Stage({
           onClick={fullscreen.onToggle}
         >
           <FullscreenIcon active={fullscreen.active} />
+        </button>
+      )}
+      {fullscreen.active && zoom?.zoomed && (
+        <button
+          type="button"
+          className="stage-reset"
+          aria-keyshortcuts="0"
+          title="Revoir tout le schéma (0)"
+          onClick={zoom.onReset}
+        >
+          Tout
         </button>
       )}
       {children}
