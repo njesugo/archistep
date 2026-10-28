@@ -1,7 +1,14 @@
 import { useRef, type CSSProperties } from "react";
 import { edgeLabelAnchor, pathFromPoints } from "../engine/geometry";
 import type { Frame } from "../engine/camera";
-import type { GroupRect, Layout, Rect } from "../engine/layout";
+import {
+  isContainmentEdge,
+  parentMap,
+  type GroupRect,
+  type Layout,
+  type Rect,
+} from "../engine/layout";
+import { fitLabel, LABEL_STYLE, MONO_STYLE, truncate } from "../engine/text";
 import { GenericIcon } from "../icons/generic";
 import { FlowPackets } from "./FlowPackets";
 import type { ResolvedFlow } from "../engine/flow";
@@ -12,6 +19,10 @@ import "../styles/scene.css";
 
 const NODE_ICON = 40;
 const GROUP_ICON = 26;
+/** Marge intérieure d'un nœud, de chaque côté du texte. */
+const NODE_TEXT_PAD = 10;
+/** Titre de groupe : 14 px, mono, majuscules, espacement 0,1 em. */
+const GROUP_TITLE = { size: 14, style: { ...MONO_STYLE, letterSpacing: 0.1 } };
 
 function IconGlyph({
   icon,
@@ -95,16 +106,33 @@ function NodeView({
   const icon = useIcon(node.icon, node.kind);
   const cx = rect.x + rect.width / 2;
   const style = node.layer ? ({ "--c": `var(--${node.layer})` } as CSSProperties) : undefined;
+  // Un nom long passe à une taille plus petite, puis sur deux lignes, puis est tronqué ;
+  // le texte complet reste disponible en infobulle (et pour les lecteurs d'écran).
+  const textWidth = rect.width - 2 * NODE_TEXT_PAD;
+  const label = fitLabel(node.label, textWidth, {
+    size: 17,
+    minSize: 14,
+    twoLineSize: 15,
+    style: LABEL_STYLE,
+  });
+  const twoLines = label.lines.length > 1;
+  const sub = node.sub ? truncate(node.sub, textWidth, 12, MONO_STYLE) : undefined;
+  const cut = label.truncated || (node.sub !== undefined && sub !== node.sub);
   return (
     <g className={stateClass("node", node.id, lit, revealed)} data-id={node.id} style={style}>
       <rect x={rect.x} y={rect.y} width={rect.width} height={rect.height} rx={14} />
       <IconGlyph icon={icon} x={cx - NODE_ICON / 2} y={rect.y + 12} size={NODE_ICON} />
-      <text className="nt" x={cx} y={rect.y + 77} fontSize={node.label.length > 13 ? 14 : 17}>
-        {node.label}
+      {cut && <title>{[node.label, node.sub].filter(Boolean).join(" · ")}</title>}
+      <text className="nt" x={cx} y={rect.y + (twoLines ? 70 : 77)} fontSize={label.size}>
+        {label.lines.map((line, i) => (
+          <tspan key={i} x={cx} dy={i === 0 ? 0 : label.size + 1}>
+            {line}
+          </tspan>
+        ))}
       </text>
-      {node.sub && (
-        <text className={node.layer ? "ns c" : "ns"} x={cx} y={rect.y + 98}>
-          {node.sub}
+      {sub && (
+        <text className={node.layer ? "ns c" : "ns"} x={cx} y={rect.y + (twoLines ? 102 : 98)}>
+          {sub}
         </text>
       )}
     </g>
@@ -116,16 +144,27 @@ function GroupView({
   rect,
   lit,
   revealed,
+  titleLimit,
 }: {
   group: SpecGroup;
   rect: GroupRect;
   lit: ReadonlySet<string> | null;
   revealed: ReadonlySet<string> | null;
+  /** Abscisse que le titre ne doit pas dépasser (flèche vers un groupe contenu). */
+  titleLimit: number;
 }) {
   const icon = useIcon(group.icon);
   // Pas d'icône générique pour un groupe : sans logo, le titre suffit.
   const hasIcon = hasLogo(group.icon);
   const style = { "--c": `var(--g-${group.color ?? "gray"})` } as CSSProperties;
+  const titleX = rect.x + (hasIcon ? 54 : 22);
+  const full = group.label.toUpperCase();
+  const title = truncate(
+    full,
+    Math.min(rect.x + rect.width - 16, titleLimit) - titleX,
+    GROUP_TITLE.size,
+    GROUP_TITLE.style,
+  );
   return (
     <g className={stateClass("frame", group.id, lit, revealed)} data-id={group.id} style={style}>
       <rect
@@ -136,8 +175,9 @@ function GroupView({
         rx={rect.depth === 0 ? 20 : 16}
       />
       {hasIcon && <IconGlyph icon={icon} x={rect.x + 20} y={rect.y + 13} size={GROUP_ICON} />}
-      <text x={rect.x + (hasIcon ? 54 : 22)} y={rect.y + 32}>
-        {group.label.toUpperCase()}
+      {title !== full && <title>{group.label}</title>}
+      <text x={titleX} y={rect.y + 32}>
+        {title}
       </text>
     </g>
   );
@@ -183,6 +223,18 @@ export function Scene({
     })
     .sort((a, b) => a.rect.depth - b.rect.depth);
 
+  // Un lien conteneur → contenu part du bord haut du conteneur : son titre doit s'arrêter avant.
+  const parents = parentMap(spec);
+  const titleLimits = new Map<string, number>();
+  for (const edge of spec.edges) {
+    const start = layout.edges[edge.id]?.[0];
+    if (!start || !isContainmentEdge(edge, parents)) continue;
+    const container =
+      layout.groups[edge.from] && start.y === layout.groups[edge.from]!.y ? edge.from : edge.to;
+    const limit = start.x - 12;
+    titleLimits.set(container, Math.min(titleLimits.get(container) ?? Infinity, limit));
+  }
+
   return (
     <svg
       ref={svg}
@@ -206,7 +258,14 @@ export function Scene({
         </marker>
       </defs>
       {groups.map(({ group, rect }) => (
-        <GroupView key={group.id} group={group} rect={rect} lit={lit} revealed={revealed} />
+        <GroupView
+          key={group.id}
+          group={group}
+          rect={rect}
+          lit={lit}
+          revealed={revealed}
+          titleLimit={titleLimits.get(group.id) ?? Infinity}
+        />
       ))}
       {flow?.pulse && (
         <rect

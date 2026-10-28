@@ -10,11 +10,28 @@ export const FRAME_MARGIN = 0.14;
 export const MIN_FRAME_WIDTH = 600;
 /** Rapport largeur/hauteur maximal de la scène : plus haut, un zoom a la place de respirer. */
 export const MAX_STAGE_ASPECT = 2.4;
+/** Sur une scène étroite (téléphone), elle est plus haute pour que la brique cadrée soit lisible. */
+export const NARROW_STAGE_WIDTH = 640;
+export const NARROW_STAGE_ASPECT = 1.6;
+/** Zoom maximal : pixels d'écran par unité du schéma. Les libellés (17) restent sous ~31 px. */
+export const MAX_ZOOM = 1.8;
 export const CAMERA_DURATION = 700;
 
-/** Rapport largeur/hauteur de la scène : celui du schéma complet, plafonné. */
-export function stageAspect(layout: Layout): number {
-  return Math.min(layout.width / Math.max(layout.height, 1), MAX_STAGE_ASPECT);
+/**
+ * Rapport largeur/hauteur de la scène : celui du schéma complet, plafonné
+ * (plus bas sur une scène étroite). `stageWidth` : largeur affichée, en pixels.
+ */
+export function stageAspect(layout: Layout, stageWidth?: number): number {
+  const max =
+    stageWidth !== undefined && stageWidth < NARROW_STAGE_WIDTH
+      ? NARROW_STAGE_ASPECT
+      : MAX_STAGE_ASPECT;
+  return Math.min(layout.width / Math.max(layout.height, 1), max);
+}
+
+/** Largeur minimale d'un cadre pour ne pas dépasser MAX_ZOOM sur une scène de cette largeur. */
+export function minFrameWidth(stageWidth?: number): number {
+  return stageWidth ? stageWidth / MAX_ZOOM : MIN_FRAME_WIDTH;
 }
 
 function pointsBox(points: Point[]): Rect | null {
@@ -53,9 +70,9 @@ export function fitAspect(frame: Frame, aspect: number): Frame {
 
 /**
  * Cadre à viser pour une étape. Sans `zoom` (ou sans id connu) : le schéma complet, au moins
- * aussi large que MIN_FRAME_WIDTH (une petite spec n'est pas agrandie à l'excès).
+ * aussi large que `minWidth` (une petite spec n'est pas agrandie à l'excès).
  * Sinon : la boîte des éléments, étendue vers le haut jusqu'au bord de leur groupe parent
- * (pour garder son titre à l'image), plus une marge, pas plus étroite que MIN_FRAME_WIDTH,
+ * (pour garder son titre à l'image), plus une marge, pas plus étroite que `minWidth`,
  * ajustée au rapport de la scène, puis recalée dans le schéma si elle y tient. `parentOf` : id d'un élément → id de son groupe parent.
  */
 export function frameFor(
@@ -63,11 +80,12 @@ export function frameFor(
   zoom: string[] | undefined,
   aspect: number,
   parentOf?: ReadonlyMap<string, string>,
+  minWidth: number = MIN_FRAME_WIDTH,
 ): Frame {
   const found = zoom?.length ? boundingBox(zoom, layout) : null;
   if (!found) {
     // Vue d'ensemble : tout le schéma, sans l'agrandir au-delà du zoom maximal (petite spec).
-    const width = Math.max(layout.width, MIN_FRAME_WIDTH);
+    const width = Math.max(layout.width, minWidth);
     const full = { x: (layout.width - width) / 2, y: 0, width, height: layout.height };
     return fitAspect(full, aspect);
   }
@@ -87,11 +105,11 @@ export function frameFor(
     width: box.width + 2 * pad,
     height: box.height + 2 * pad,
   };
-  const minWidth = Math.min(MIN_FRAME_WIDTH, layout.width);
-  if (padded.width < minWidth) {
-    const extra = minWidth - padded.width;
+  const floor = Math.min(minWidth, layout.width);
+  if (padded.width < floor) {
+    const extra = floor - padded.width;
     padded.x -= extra / 2;
-    padded.width = minWidth;
+    padded.width = floor;
   }
   const frame = fitAspect(padded, aspect);
   // Recaler dans le schéma quand le cadre y tient, plutôt que de montrer du vide autour.

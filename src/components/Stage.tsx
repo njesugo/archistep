@@ -1,3 +1,4 @@
+import type { Ref } from "react";
 import type { Frame } from "../engine/camera";
 import type { ResolvedFlow } from "../engine/flow";
 import type { Layout } from "../engine/layout";
@@ -21,14 +22,31 @@ type Props = {
   frame: Frame | undefined;
   animateCamera: boolean;
   aspect: number | undefined;
+  /** Largeur de la scène mesurée : la caméra en dépend, donc on attend de la connaître. */
+  measured: boolean;
+  /** Langue du contenu de la spec, si elle diffère de celle de l'interface. */
+  lang?: string;
+  ref?: Ref<HTMLElement>;
 };
 
 /** Cadre du schéma : placement en cours, erreur, ou scène. */
-export function Stage({ layout, lit, revealed, flow, frame, animateCamera, aspect }: Props) {
+export function Stage({
+  layout,
+  lit,
+  revealed,
+  flow,
+  frame,
+  animateCamera,
+  aspect,
+  measured,
+  lang,
+  ref,
+}: Props) {
+  const showScene = layout.status === "ready" && measured;
   return (
-    <section className="stage" aria-label="Schéma de l’architecture">
+    <section ref={ref} className="stage" aria-label="Schéma de l’architecture" lang={lang}>
       <div className="scroll">
-        {layout.status === "ready" && (
+        {showScene && (
           <Scene
             key={layoutId(layout.layout)}
             spec={layout.spec}
@@ -41,7 +59,9 @@ export function Stage({ layout, lit, revealed, flow, frame, animateCamera, aspec
             aspect={aspect}
           />
         )}
-        {layout.status === "loading" && <p className="stage-msg">Calcul du placement…</p>}
+        {(layout.status === "loading" || (layout.status === "ready" && !measured)) && (
+          <p className="stage-msg">Calcul du placement…</p>
+        )}
         {layout.status === "error" && (
           <p className="stage-msg" role="alert">
             Placement impossible : {layout.message}

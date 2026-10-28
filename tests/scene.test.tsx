@@ -25,4 +25,24 @@ describe("Scene", () => {
     // le groupe extérieur est dessiné avant son enfant
     expect(html.indexOf('data-id="af"')).toBeLessThan(html.indexOf('data-id="dbt"'));
   });
+
+  it("tronque un titre de groupe avant la flèche vers le groupe contenu", async () => {
+    const parsed = validateSpec(example);
+    if (!parsed.ok) throw new Error("exemple invalide");
+    const spec = structuredClone(parsed.spec);
+    spec.groups.find((g) => g.id === "af")!.label =
+      "Apache Airflow · Orchestration des tâches quotidiennes de production";
+    const layout = await computeLayout(spec);
+    const html = renderToStaticMarkup(<Scene spec={spec} layout={layout} />);
+    const title = /data-id="af"[\s\S]*?<text[^>]*>([^<]*)<\/text>/.exec(html)?.[1] ?? "";
+    expect(title.endsWith("…")).toBe(true);
+    // largeur estimée du titre : 14 px × (0,6 + 0,1 em) par caractère, depuis x + 54
+    const af = layout.groups.af!;
+    const arrowX = layout.edges.t1![0]!.x;
+    expect(af.x + 54 + title.length * 14 * 0.7).toBeLessThanOrEqual(arrowX - 12 + 1e-6);
+    // le titre complet reste disponible en infobulle
+    expect(html).toContain(
+      "<title>Apache Airflow · Orchestration des tâches quotidiennes de production</title>",
+    );
+  });
 });

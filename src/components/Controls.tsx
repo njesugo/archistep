@@ -9,6 +9,7 @@ type Props = {
   onToggleProgressive: () => void;
   drawerOpen: boolean;
   onToggleDrawer: () => void;
+  onPresent: () => void;
   onPrev: () => void;
   onNext: () => void;
   onGoTo: (index: number) => void;
@@ -25,6 +26,7 @@ export function Controls({
   onToggleProgressive,
   drawerOpen,
   onToggleDrawer,
+  onPresent,
   onPrev,
   onNext,
   onGoTo,
@@ -34,10 +36,23 @@ export function Controls({
   return (
     <nav className="ctrl" aria-label="Navigation dans le schéma">
       <div className="grp">
-        <button type="button" onClick={onPrev} disabled={atStart}>
+        <button
+          type="button"
+          onClick={onPrev}
+          disabled={atStart}
+          aria-keyshortcuts="ArrowLeft"
+          title="Précédent (flèche gauche)"
+        >
           Précédent
         </button>
-        <button type="button" className="primary" onClick={onNext} disabled={atEnd}>
+        <button
+          type="button"
+          className="primary"
+          onClick={onNext}
+          disabled={atEnd}
+          aria-keyshortcuts="ArrowRight Space"
+          title="Suivant (flèche droite ou Espace)"
+        >
           Suivant
         </button>
       </div>
@@ -63,6 +78,15 @@ export function Controls({
           onClick={onToggleProgressive}
         >
           Construction progressive : {progressive ? "oui" : "non"}
+        </button>
+        <button
+          type="button"
+          id="present-toggle"
+          onClick={onPresent}
+          aria-keyshortcuts="P"
+          title="Mode présentation (P ; Échap pour quitter)"
+        >
+          Mode présentation
         </button>
         <button
           type="button"

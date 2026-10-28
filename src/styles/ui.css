@@ -231,3 +231,26 @@ td.hl,
 td.hl {
   color: var(--fg);
 }
+
+/* Mode présentation : seule la scène et sa légende restent, en plus grand. */
+.page.presenting {
+  max-width: 1600px;
+}
+.page.presenting .head,
+.page.presenting .ctrl {
+  display: none;
+}
+.page.presenting .info {
+  zoom: 1.32;
+}
+.exit-presentation {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 8px);
+  right: max(12px, env(safe-area-inset-right, 0px));
+  z-index: 20;
+  opacity: 0.35;
+}
+.exit-presentation:hover,
+.exit-presentation:focus-visible {
+  opacity: 1;
+}

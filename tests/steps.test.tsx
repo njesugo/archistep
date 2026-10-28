@@ -64,6 +64,9 @@ describe("navigation", () => {
     expect(keyAction("ArrowLeft", false)).toBe("prev");
     expect(keyAction("Home", false)).toBe("first");
     expect(keyAction("0", false)).toBe("first");
+    expect(keyAction("p", false)).toBe("present");
+    expect(keyAction("P", false)).toBe("present");
+    expect(keyAction("Escape", false)).toBe("exit");
     expect(keyAction("a", false)).toBeNull();
   });
 
@@ -85,6 +88,7 @@ describe("Controls", () => {
         onToggleProgressive={() => {}}
         drawerOpen={false}
         onToggleDrawer={() => {}}
+        onPresent={() => {}}
         onPrev={() => {}}
         onNext={() => {}}
         onGoTo={() => {}}
@@ -114,6 +118,7 @@ describe("Controls", () => {
           onToggleProgressive={() => {}}
           drawerOpen={false}
           onToggleDrawer={() => {}}
+          onPresent={() => {}}
           onPrev={() => {}}
           onNext={() => {}}
           onGoTo={() => {}}
@@ -125,6 +130,13 @@ describe("Controls", () => {
     expect(render(false)).toContain("Construction progressive : non");
     expect(render(true)).toContain('aria-pressed="true"');
     expect(render(true)).toContain("Construction progressive : oui");
+  });
+
+  it("annonce les raccourcis clavier des boutons", () => {
+    const html = render(2);
+    expect(html).toContain('aria-keyshortcuts="ArrowRight Space"');
+    expect(html).toContain('aria-keyshortcuts="ArrowLeft"');
+    expect(html).toMatch(/aria-keyshortcuts="P"[^>]*>Mode présentation/);
   });
 
   it("désactive Précédent au début et Suivant à la fin", () => {
