@@ -1,5 +1,6 @@
 import { useEffect, useRef, type CSSProperties } from "react";
-import { packetFrame, runAnimation, type ResolvedFlow } from "../engine/flow";
+import { runAnimation } from "../engine/animation";
+import { packetFrame, type ResolvedFlow } from "../engine/flow";
 
 const DOT_RADII = [5, 7, 4, 6];
 

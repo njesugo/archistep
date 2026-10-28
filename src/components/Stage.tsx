@@ -1,3 +1,4 @@
+import type { Frame } from "../engine/camera";
 import type { ResolvedFlow } from "../engine/flow";
 import type { Spec } from "../spec/schema";
 import type { LayoutState } from "../useLayout";
@@ -9,17 +10,31 @@ export function Stage({
   layout,
   lit,
   flow,
+  frame,
+  animateCamera,
+  aspect,
 }: {
   spec: Spec;
   layout: LayoutState;
   lit: ReadonlySet<string> | null;
   flow: ResolvedFlow | null;
+  frame: Frame | undefined;
+  animateCamera: boolean;
+  aspect: number | undefined;
 }) {
   return (
     <section className="stage" aria-label="Schéma de l’architecture">
       <div className="scroll">
         {layout.status === "ready" && (
-          <Scene spec={spec} layout={layout.layout} lit={lit} flow={flow} />
+          <Scene
+            spec={spec}
+            layout={layout.layout}
+            lit={lit}
+            flow={flow}
+            frame={frame}
+            animateCamera={animateCamera}
+            aspect={aspect}
+          />
         )}
         {layout.status === "loading" && <p className="stage-msg">Calcul du placement…</p>}
         {layout.status === "error" && (

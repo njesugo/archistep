@@ -1,10 +1,12 @@
-import type { CSSProperties } from "react";
+import { useRef, type CSSProperties } from "react";
 import { edgeLabelAnchor, pathFromPoints } from "../engine/geometry";
+import type { Frame } from "../engine/camera";
 import type { GroupRect, Layout, Rect } from "../engine/layout";
 import { GenericIcon } from "../icons/generic";
 import { FlowPackets } from "./FlowPackets";
 import type { ResolvedFlow } from "../engine/flow";
 import { hasLogo, useIcon, type ResolvedIcon } from "../icons/registry";
+import { useCamera } from "../useCamera";
 import type { Spec, SpecGroup, SpecNode } from "../spec/schema";
 import "../styles/scene.css";
 
@@ -140,13 +142,26 @@ export function Scene({
   layout,
   lit = null,
   flow = null,
+  frame,
+  animateCamera = true,
+  aspect,
 }: {
   spec: Spec;
   layout: Layout;
   lit?: ReadonlySet<string> | null;
   /** Flux animé de l'étape courante ; absent quand le mouvement est réduit. */
   flow?: ResolvedFlow | null;
+  /** Cadre visé par la caméra (viewBox) ; par défaut, tout le schéma. */
+  frame?: Frame;
+  /** Faux : le cadre change sans déplacement progressif (mouvement réduit). */
+  animateCamera?: boolean;
+  /** Rapport largeur/hauteur de la scène (fixe, pour que la page ne saute pas). */
+  aspect?: number;
 }) {
+  const svg = useRef<SVGSVGElement>(null);
+  const full: Frame = { x: 0, y: 0, width: layout.width, height: layout.height };
+  useCamera(svg, frame ?? full, animateCamera);
+
   // Ordre de dessin : groupes (du plus extérieur au plus intérieur), liens, nœuds.
   const groups = spec.groups
     .flatMap((group) => {
@@ -157,7 +172,9 @@ export function Scene({
 
   return (
     <svg
+      ref={svg}
       className="scene"
+      style={{ aspectRatio: String(aspect ?? layout.width / layout.height) }}
       viewBox={`0 0 ${layout.width} ${layout.height}`}
       role="img"
       aria-label={spec.meta.title}
