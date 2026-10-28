@@ -1,9 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import example from "./examples/youtube-pipeline.json";
-import { Scene } from "./components/Scene";
+import { Controls } from "./components/Controls";
+import { DataPanels } from "./components/DataPanel";
+import { Stage } from "./components/Stage";
+import { StepCaption } from "./components/StepCaption";
+import { litIds } from "./engine/state";
 import { validateSpec } from "./spec/validate";
 import { resolveTheme, THEME_KEY, toggleTheme, type Theme } from "./theme";
 import { useLayout } from "./useLayout";
+import { useStepper } from "./useStepper";
 
 function readStoredTheme(): string | null {
   try {
@@ -13,7 +18,7 @@ function readStoredTheme(): string | null {
   }
 }
 
-// M3 : l'exemple intégré, rendu statique. Le tiroir Spec (M8) permettra d'en charger d'autres.
+// Pour l'instant : l'exemple intégré. Le tiroir Spec (M8) permettra d'en charger d'autres.
 const parsed = validateSpec(example);
 if (!parsed.ok) throw new Error(parsed.errors.map((e) => e.message).join("\n"));
 const spec = parsed.spec;
@@ -23,12 +28,15 @@ export default function App() {
     resolveTheme(readStoredTheme(), window.matchMedia("(prefers-color-scheme: dark)").matches),
   );
   const layout = useLayout(spec);
+  const stepper = useStepper(spec.steps.length);
+  const step = spec.steps[stepper.index];
+  const lit = useMemo(() => (step ? litIds(spec, step) : null), [step]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
 
-  function onToggle() {
+  function onToggleTheme() {
     const next = toggleTheme(theme);
     setTheme(next);
     try {
@@ -38,26 +46,28 @@ export default function App() {
     }
   }
 
+  if (!step) return null;
+
   return (
     <main className="page">
       <header className="head">
         {spec.meta.subtitle && <p className="eyebrow">{spec.meta.subtitle}</p>}
         <h1>{spec.meta.title}</h1>
       </header>
-      <section className="stage" aria-label="Schéma de l’architecture">
-        <div className="scroll">
-          {layout.status === "ready" && <Scene spec={spec} layout={layout.layout} />}
-          {layout.status === "loading" && <p className="stage-msg">Calcul du placement…</p>}
-          {layout.status === "error" && (
-            <p className="stage-msg" role="alert">
-              Placement impossible : {layout.message}
-            </p>
-          )}
-        </div>
+      <Stage spec={spec} layout={layout} lit={lit} />
+      <section className="info">
+        <StepCaption step={step} index={stepper.index} count={stepper.count} />
+        <DataPanels key={step.id} panels={step.panels} />
       </section>
-      <button type="button" onClick={onToggle}>
-        {theme === "dark" ? "Passer au thème clair" : "Passer au thème sombre"}
-      </button>
+      <Controls
+        steps={spec.steps}
+        index={stepper.index}
+        onPrev={stepper.prev}
+        onNext={stepper.next}
+        onGoTo={stepper.goTo}
+        themeLabel={theme === "dark" ? "Thème clair" : "Thème sombre"}
+        onToggleTheme={onToggleTheme}
+      />
     </main>
   );
 }
