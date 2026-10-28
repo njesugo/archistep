@@ -113,7 +113,16 @@ npm run logos:check  # d'où vient chaque logo des exemples
 
 ## Déploiement
 
-Site statique sur Netlify, configuré par [netlify.toml](netlify.toml) : commande `npm test && npm run build`, dossier publié `dist`. Si un test échoue, rien n'est publié. Chaque push sur `main` publie en production ; chaque branche ou pull request a son lien de test (_deploy preview_). Travailler sur une branche par changement et regarder son aperçu avant de fusionner.
+Site statique sur Netlify, configuré par [netlify.toml](netlify.toml) : commande `npm test && npm run build`, dossier publié `dist`. Si un test échoue, rien n'est publié. Chaque push sur `main` publie en production ; chaque branche ou pull request a son lien de test (_deploy preview_).
+
+### Économiser les crédits Netlify
+
+Le plan gratuit donne **300 crédits par mois** ; chaque **déploiement de production** (push ou fusion sur `main`) en coûte **15**, soit une vingtaine de mises en production par mois. Les **aperçus de branche sont gratuits**. Crédits épuisés : le site reste en ligne, figé sur la dernière version publiée, jusqu'au mois suivant.
+
+1. Travailler sur une branche par jalon ou par changement ; ne jamais pousser directement sur `main`.
+2. Vérifier chaque branche sur son aperçu Netlify (gratuit) ou en local (`npm run build && npm run preview`).
+3. Fusionner dans `main` seulement pour mettre à jour le site public, en regroupant plusieurs changements.
+4. La consommation se suit dans Netlify, page _Usage_ de l'équipe.
 
 Connexion du dépôt (déjà faite, une seule fois) : Netlify > **Add new site** > **Import an existing project** > **GitHub** > choisir le dépôt ; vérifier branche `main`, build command `npm test && npm run build`, publish directory `dist`, base directory vide ; **Deploy**.
 
