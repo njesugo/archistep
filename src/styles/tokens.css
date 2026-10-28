@@ -6,6 +6,17 @@
   --card: #ffffff;
   --soft: #eaeef4;
   --accent: #2d59d6;
+  --bronze: #a5622a;
+  --silver: #66758c;
+  --gold: #a87c00;
+  --g-blue: #2d59d6;
+  --g-teal: #0b8a8a;
+  --g-orange: #d94a1a;
+  --g-purple: #7a4dd6;
+  --g-gray: #66758c;
+  --logo-pill: transparent;
+  --logo-light-display: inline;
+  --logo-dark-display: none;
   --display: "Bricolage Grotesque", system-ui, sans-serif;
   --body: "IBM Plex Sans", system-ui, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
@@ -19,6 +30,17 @@
     --card: #151b24;
     --soft: #1c2430;
     --accent: #7197ff;
+    --bronze: #d98c4f;
+    --silver: #9daabd;
+    --gold: #e4b93c;
+    --g-blue: #7197ff;
+    --g-teal: #2fc4c4;
+    --g-orange: #ff7b4b;
+    --g-purple: #a98bff;
+    --g-gray: #9daabd;
+    --logo-pill: #f3f5f8;
+    --logo-light-display: none;
+    --logo-dark-display: inline;
     color-scheme: dark;
   }
 }
@@ -30,5 +52,16 @@
   --card: #151b24;
   --soft: #1c2430;
   --accent: #7197ff;
+  --bronze: #d98c4f;
+  --silver: #9daabd;
+  --gold: #e4b93c;
+  --g-blue: #7197ff;
+  --g-teal: #2fc4c4;
+  --g-orange: #ff7b4b;
+  --g-purple: #a98bff;
+  --g-gray: #9daabd;
+  --logo-pill: #f3f5f8;
+  --logo-light-display: none;
+  --logo-dark-display: inline;
   color-scheme: dark;
 }

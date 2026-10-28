@@ -22,7 +22,7 @@ export type Layout = {
 export const NODE_WIDTH = 140;
 export const NODE_HEIGHT = 110;
 /** Espace réservé en haut d'un groupe pour son titre (et pour la flèche vers un groupe enfant). */
-export const GROUP_HEADER = 52;
+export const GROUP_HEADER = 60;
 export const GROUP_PADDING = 24;
 const ROOT_ID = "__root__";
 
@@ -78,9 +78,12 @@ export function isContainmentEdge(
   return isAncestor(edge.from, edge.to, parents) || isAncestor(edge.to, edge.from, parents);
 }
 
-/** Flèche courte, du bord haut du conteneur vers le bord haut de l'élément contenu. */
+/**
+ * Flèche courte, du bord haut du conteneur vers le bord haut de l'élément contenu.
+ * Elle part près du coin droit, loin du titre du groupe qui est à gauche.
+ */
 export function containmentPath(container: Rect, inner: Rect): Point[] {
-  const x = Math.round(inner.x + inner.width * 0.75);
+  const x = Math.round(inner.x + inner.width - GROUP_PADDING - 10);
   return [
     { x, y: container.y },
     { x, y: inner.y },

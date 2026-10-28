@@ -1,0 +1,62 @@
+.scene {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-width: 780px;
+}
+.frame rect {
+  fill: none;
+  stroke: var(--c);
+  stroke-width: 2.75;
+}
+.frame text {
+  font: 600 14px var(--mono);
+  letter-spacing: 0.1em;
+  fill: var(--c);
+}
+.node rect {
+  fill: var(--bg);
+  stroke: var(--c, var(--line));
+  stroke-width: 2;
+}
+.node .logo-pill,
+.frame .logo-pill {
+  fill: var(--logo-pill);
+  stroke: none;
+}
+.nt {
+  font: 600 17px var(--body);
+  fill: var(--fg);
+  text-anchor: middle;
+}
+.ns {
+  font: 500 12px var(--mono);
+  fill: var(--muted);
+  text-anchor: middle;
+  letter-spacing: 0.03em;
+}
+.ns.c {
+  fill: var(--c);
+}
+.glyph {
+  color: var(--muted);
+}
+.logo-dark {
+  display: var(--logo-dark-display);
+}
+.logo-light.has-dark {
+  display: var(--logo-light-display);
+}
+.edge {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 2.5;
+}
+.edge.trigger {
+  stroke: var(--g-teal);
+  stroke-dasharray: 5 5;
+}
+.edge-label {
+  font: 500 13px var(--mono);
+  fill: var(--g-teal);
+}
