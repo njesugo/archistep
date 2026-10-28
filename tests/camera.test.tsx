@@ -12,6 +12,9 @@ import {
   frameToViewBox,
   lerpFrame,
   MAX_STAGE_ASPECT,
+  MAX_ZOOM,
+  minFrameWidth,
+  NARROW_STAGE_ASPECT,
   MIN_FRAME_WIDTH,
   stageAspect,
   type Frame,
@@ -166,6 +169,39 @@ describe("cadre d'une étape", () => {
     const f = frameFor(small, ["a"], 2);
     expect(f.width).toBeLessThanOrEqual(small.width * 1.5);
     expect(contains(f, small.nodes.a!)).toBe(true);
+  });
+});
+
+describe("caméra et largeur de la scène", () => {
+  it("rend la scène plus haute sur un écran étroit", async () => {
+    const l = await layoutPromise;
+    expect(stageAspect(l, 1100)).toBe(MAX_STAGE_ASPECT);
+    expect(stageAspect(l, 368)).toBe(NARROW_STAGE_ASPECT);
+    expect(stageAspect(l)).toBe(MAX_STAGE_ASPECT);
+  });
+
+  it("dérive la largeur minimale du cadre du zoom maximal à l'écran", () => {
+    expect(minFrameWidth(1080)).toBeCloseTo(1080 / MAX_ZOOM);
+    expect(minFrameWidth(360)).toBeCloseTo(200);
+    expect(minFrameWidth(0)).toBe(MIN_FRAME_WIDTH);
+    expect(minFrameWidth(undefined)).toBe(MIN_FRAME_WIDTH);
+  });
+
+  it("zoome davantage sur un téléphone, sans dépasser le zoom maximal", async () => {
+    const l = await layoutPromise;
+    const parents = parentMap(spec);
+    for (const stageWidth of [368, 720, 1086, 1500]) {
+      const aspect = stageAspect(l, stageWidth);
+      for (const step of spec.steps) {
+        const f = frameFor(l, step.zoom, aspect, parents, minFrameWidth(stageWidth));
+        const zoom = stageWidth / f.width;
+        expect(zoom, `${step.id} à ${stageWidth}px`).toBeLessThanOrEqual(MAX_ZOOM + 1e-9);
+      }
+    }
+    const phone = frameFor(l, ["yt"], stageAspect(l, 368), parents, minFrameWidth(368));
+    const desktop = frameFor(l, ["yt"], stageAspect(l, 1086), parents, minFrameWidth(1086));
+    expect(phone.width).toBeLessThan(desktop.width);
+    expect(contains(phone, l.nodes.yt!)).toBe(true);
   });
 });
 

@@ -1,17 +1,19 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Controls } from "./components/Controls";
 import { DataPanels } from "./components/DataPanel";
 import { SpecDrawer } from "./components/SpecDrawer";
 import { Stage } from "./components/Stage";
 import { StepCaption } from "./components/StepCaption";
 import { downloadText, slugify } from "./download";
-import { frameFor, stageAspect } from "./engine/camera";
+import { frameFor, minFrameWidth, stageAspect } from "./engine/camera";
 import { parentMap } from "./engine/layout";
 import { resolveFlow } from "./engine/flow";
 import { litIds, positions, revealedIds } from "./engine/state";
 import { resolveTheme, THEME_KEY, toggleTheme, type Theme } from "./theme";
+import { useElementWidth } from "./useElementWidth";
 import { useLayout } from "./useLayout";
 import { useReducedMotion } from "./useReducedMotion";
+import { useShortcuts } from "./useShortcuts";
 import { useSpecEditor } from "./useSpecEditor";
 import { useStepper } from "./useStepper";
 
@@ -29,6 +31,7 @@ export default function App() {
   );
   const editor = useSpecEditor();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [presenting, setPresenting] = useState(false);
 
   // Tout ce qui est affiché vient de la spec à laquelle appartient le placement : pendant un
   // nouveau calcul, l'ancien schéma reste à l'écran, cohérent avec sa légende.
@@ -60,11 +63,15 @@ export default function App() {
     [spec, step, layoutReady, reduceMotion],
   );
 
-  const aspect = layoutReady ? stageAspect(layoutReady) : undefined;
+  // La caméra s'adapte à la largeur réelle de la scène (téléphone, tiroir ouvert, présentation).
+  const [stageRef, stageWidth] = useElementWidth<HTMLElement>();
+  const aspect = layoutReady && stageWidth ? stageAspect(layoutReady, stageWidth) : undefined;
   const frame = useMemo(
     () =>
-      step && layoutReady && aspect ? frameFor(layoutReady, step.zoom, aspect, parents) : undefined,
-    [step, layoutReady, aspect, parents],
+      step && layoutReady && aspect
+        ? frameFor(layoutReady, step.zoom, aspect, parents, minFrameWidth(stageWidth))
+        : undefined,
+    [step, layoutReady, aspect, parents, stageWidth],
   );
 
   useEffect(() => {
@@ -85,6 +92,40 @@ export default function App() {
     }
   }
 
+  // Mode présentation : en-tête, tiroir et barre de contrôle masqués, texte agrandi ;
+  // on avance au clavier. P bascule, Échap quitte.
+  const present = useCallback(() => {
+    setPresenting((on) => {
+      if (!on) {
+        setDrawerOpen(false);
+        window.scrollTo(0, 0);
+        // Pas d'anneau de focus visible pendant l'enregistrement.
+        if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+      }
+      return !on;
+    });
+  }, []);
+  const exitPresentation = useCallback(() => setPresenting(false), []);
+
+  // En quittant le mode, le focus revient sur le bouton qui l'a ouvert.
+  const wasPresenting = useRef(false);
+  useEffect(() => {
+    if (!presenting && wasPresenting.current) document.getElementById("present-toggle")?.focus();
+    wasPresenting.current = presenting;
+  }, [presenting]);
+
+  const shortcuts = useMemo(
+    () => ({
+      next: stepper.next,
+      prev: stepper.prev,
+      first: stepper.first,
+      present,
+      exit: exitPresentation,
+    }),
+    [stepper.next, stepper.prev, stepper.first, present, exitPresentation],
+  );
+  useShortcuts(shortcuts);
+
   /** Après un import ou le choix d'un exemple : on repart de la première étape. */
   function afterLoad(loaded: unknown) {
     if (!loaded) return;
@@ -96,8 +137,12 @@ export default function App() {
 
   return (
     <>
-      <main className={drawerOpen ? "page has-drawer" : "page"}>
-        <header className="head">
+      <main
+        className={["page", drawerOpen && "has-drawer", presenting && "presenting"]
+          .filter(Boolean)
+          .join(" ")}
+      >
+        <header className="head" lang={spec.meta.language}>
           {spec.meta.subtitle && <p className="eyebrow">{spec.meta.subtitle}</p>}
           <h1>{spec.meta.title}</h1>
         </header>
@@ -109,8 +154,11 @@ export default function App() {
           frame={frame}
           animateCamera={!reduceMotion}
           aspect={aspect}
+          measured={stageWidth > 0}
+          lang={spec.meta.language}
+          ref={stageRef}
         />
-        <section className="info">
+        <section className="info" lang={spec.meta.language}>
           <StepCaption step={step} index={stepper.step} count={stepper.count} beat={stepper.beat} />
           <DataPanels key={step.id} panels={step.panels} highlight={beat?.highlight} />
         </section>
@@ -123,6 +171,7 @@ export default function App() {
           onToggleProgressive={() => setOverride(!progressive)}
           drawerOpen={drawerOpen}
           onToggleDrawer={() => setDrawerOpen((open) => !open)}
+          onPresent={present}
           onPrev={stepper.prev}
           onNext={stepper.next}
           onGoTo={stepper.goTo}
@@ -130,6 +179,11 @@ export default function App() {
           onToggleTheme={onToggleTheme}
         />
       </main>
+      {presenting && (
+        <button type="button" className="exit-presentation" onClick={exitPresentation}>
+          Quitter le mode présentation
+        </button>
+      )}
       <SpecDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}

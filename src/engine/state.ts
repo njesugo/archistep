@@ -39,13 +39,15 @@ export function litIds(spec: Spec, step: Step, beat?: Beat): Set<string> | null 
   return lit;
 }
 
-export type StepAction = "next" | "prev" | "first";
+export type ShortcutAction = "next" | "prev" | "first" | "present" | "exit";
 
 /**
- * Action déclenchée par une touche. Sur un bouton, Espace le déclenche déjà lui-même :
- * on ne l'intercepte pas, sinon l'étape avancerait deux fois.
+ * Raccourcis clavier (cahier, section 8) : flèche droite ou Espace = suivant, flèche gauche =
+ * précédent, 0 ou Début = première étape, P = mode présentation, Échap = quitter.
+ * Sur un bouton, Espace le déclenche déjà lui-même : on ne l'intercepte pas, sinon l'étape
+ * avancerait deux fois.
  */
-export function keyAction(key: string, onButton: boolean): StepAction | null {
+export function keyAction(key: string, onButton: boolean): ShortcutAction | null {
   switch (key) {
     case "ArrowRight":
       return "next";
@@ -56,6 +58,11 @@ export function keyAction(key: string, onButton: boolean): StepAction | null {
     case "Home":
     case "0":
       return "first";
+    case "p":
+    case "P":
+      return "present";
+    case "Escape":
+      return "exit";
     default:
       return null;
   }

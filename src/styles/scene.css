@@ -2,7 +2,6 @@
   display: block;
   width: 100%;
   height: auto;
-  min-width: 780px;
 }
 .frame rect {
   fill: none;

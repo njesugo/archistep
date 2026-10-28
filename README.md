@@ -1,112 +1,122 @@
 # ArchiStep (nom de travail)
 
-Outil web qui transforme une description d'architecture de données en schéma animé, présenté étape par étape, pour des vidéos pédagogiques. Cahier des charges : [docs/SPEC.md](docs/SPEC.md). Prototype de référence : [docs/reference/prototype.html](docs/reference/prototype.html).
+Outil web qui transforme une description d'architecture de données en schéma animé, présenté étape par étape, pour servir de support à des vidéos pédagogiques enregistrées en capture d'écran.
 
-**État : jalon M8 (spec en direct).** Pas à pas complet, et tiroir Spec : éditeur JSON validé en direct, import, export, exemples, sauvegarde locale, prompt de génération copiable. Pas encore de mode présentation.
+- **Site :** <https://archistep.netlify.app/>
+- **Cahier des charges :** [docs/SPEC.md](docs/SPEC.md) · **Prototype de référence :** [docs/reference/prototype.html](docs/reference/prototype.html)
+- **État :** V1 terminée (jalons M0 à M9). La V2 n'est pas commencée.
 
-**Site déployé :** <https://archistep.netlify.app/>
+## Utilisation
 
-## Prérequis
+1. Ouvre le site : l'exemple intégré (pipeline YouTube Analytics, données fictives) s'affiche.
+2. Pour ta propre architecture, clique sur **Spec** : colle ou importe une spec JSON (voir [Écrire une spec](#écrire-une-spec)). Le schéma se met à jour pendant que tu tapes.
+3. Passe en **Mode présentation** (touche `P`) et lance ton enregistrement d'écran. Avance avec la flèche droite ou Espace, à ton rythme, en commentant.
 
-Node.js 22 ou plus récent (voir `.nvmrc` ; avec nvm : `nvm use`) et npm.
+### Raccourcis clavier
 
-## Installation
+| Touche          | Action                                             |
+| --------------- | -------------------------------------------------- |
+| `→` ou `Espace` | Suivant (sous-étape suivante, puis étape suivante) |
+| `←`             | Précédent                                          |
+| `0` ou `Début`  | Première étape (vue d'ensemble)                    |
+| `P`             | Mode présentation (bascule)                        |
+| `Échap`         | Quitter le mode présentation, ou fermer le tiroir  |
 
-```bash
-npm ci
-```
+Les raccourcis sont ignorés pendant la saisie dans l'éditeur.
+
+### Mode présentation
+
+L'en-tête, le tiroir et la barre de contrôle disparaissent ; la scène s'élargit et la légende grossit de 32 %. Seul un bouton très discret « Quitter le mode présentation » reste en haut à droite (il devient lisible au survol). Aucun anneau de focus n'est visible à l'entrée dans le mode.
+
+### Thèmes, mouvement, petits écrans
+
+- Thèmes clair et sombre : le réglage du système, puis le bouton (mémorisé dans le navigateur).
+- `prefers-reduced-motion` : ni paquets animés, ni impulsion, ni glissement de caméra (le cadre change directement).
+- À 400 px de large, la page ne défile pas horizontalement : la scène devient plus haute, la caméra cadre la brique active et la légende passe sous le schéma.
+
+## Écrire une spec
+
+La spec JSON est la source de vérité : nœuds, groupes, liens, étapes, textes et panneaux de données. Le placement, les couleurs et les animations sont calculés ; on ne donne jamais de coordonnées.
+
+- **Format :** décrit dans [docs/SPEC.md](docs/SPEC.md), section 6, et, dans sa version exacte, dans le prompt de génération [src/prompts/generate-spec.md](src/prompts/generate-spec.md). Le schéma Zod qui fait foi est [src/spec/schema.ts](src/spec/schema.ts).
+- **Générer une spec avec un assistant :** dans le tiroir Spec, **Copier le prompt**, colle-le dans un assistant avec ta description (ou une image du schéma), puis colle le JSON obtenu dans l'éditeur.
+- **Validation :** une spec invalide n'est jamais dessinée ; la dernière version valide reste à l'écran. Les erreurs disent quoi corriger (élément, champ, raison) et un clic sur une erreur sélectionne l'endroit fautif dans l'éditeur.
+- **Sauvegarde :** chaque version valide est enregistrée dans le navigateur. **Exporter** télécharge la spec en `.json` ; **Importer** recharge un fichier.
+
+### Écarts avec le cahier des charges
+
+Le schéma a été généralisé quand il ne pouvait pas exprimer l'exemple, sans cas particulier dans le moteur :
+
+- une étape a une liste `panels` (et non un seul `panel`) ; `highlight.panel` choisit le panneau visé (0 par défaut) ;
+- une étape dont le `focus` est vide est une **vue d'ensemble** : rien n'est atténué et, en construction progressive, tout est affiché ;
+- le `focus` d'une sous-étape **remplace** celui de l'étape (le cahier disait « ajoute ou remplace ») ;
+- `highlight` : `rows` seul = lignes entières, `cols` seul = colonnes entières, les deux = leur intersection ;
+- tout lien entre un groupe et l'un de ses descendants (pas seulement `trigger`) est dessiné comme une flèche courte au-dessus du groupe contenu ; un tel lien de style `trigger` avec un `flow` fait pulser sa destination ;
+- sans `shape` ni couleur, un flux suit la couche de sa destination (points, carrés, barres) ;
+- un bouton « Construction progressive » remplace `meta.buildMode` le temps de la session ;
+- Node 22 au lieu de 20 (Node 20 n'est plus maintenu) ; six couleurs du thème clair ont été légèrement assombries pour atteindre le contraste AA.
+
+## Logos
+
+Dépose les vrais logos (SVG, ou PNG transparent d'au moins 256 px) dans [src/assets/logos/](src/assets/logos/), nommés d'après la clé d'icône (`airflow.svg` pour `"icon": "airflow"`) ; variante optionnelle `airflow.dark.svg` pour le thème sombre. Ils ne sont jamais modifiés. À défaut, l'icône vient de `simple-icons`, puis d'une icône générique selon le `kind`. Règles détaillées : [src/assets/logos/README.md](src/assets/logos/README.md).
+
+`npm run logos:check` liste, pour chaque exemple, d'où vient chaque icône. Le tiroir Spec signale aussi les logos manquants (jamais sur le schéma présenté).
 
 ## Développement
 
-```bash
-npm run dev      # serveur local avec rechargement à chaud
-npm run lint     # ESLint
-npm run format   # Prettier (écrit) ; format:check pour vérifier seulement
-```
-
-## Tests
+Prérequis : Node.js 22 ou plus récent (`.nvmrc` ; avec nvm : `nvm use`) et npm.
 
 ```bash
-npm test             # Vitest, une exécution
-npm run test:watch   # Vitest en continu
+npm ci               # installation
+npm run dev          # serveur local avec rechargement à chaud
+npm test             # tests Vitest (une exécution) ; npm run test:watch en continu
+npm run lint         # ESLint
+npm run format       # Prettier (écrit) ; npm run format:check pour vérifier
+npm run build        # vérification des types puis build dans dist/
+npm run preview      # sert dist/ en local
+npm run logos:check  # d'où vient chaque logo des exemples
 ```
 
-## Build
+### Organisation du code
 
-```bash
-npm run build     # vérification des types puis build dans dist/
-npm run preview   # sert dist/ en local
-```
+| Dossier           | Contenu                                                                                                        |
+| ----------------- | -------------------------------------------------------------------------------------------------------------- |
+| `src/spec/`       | schéma Zod, `checkReferences`, validation et messages d'erreur, localisation d'une erreur dans le texte        |
+| `src/engine/`     | logique sans navigateur : placement (ELK), caméra, flux, états et sous-étapes, surlignage, ajustement du texte |
+| `src/components/` | `Scene` (SVG), `Stage`, `StepCaption`, `DataPanel`, `Controls`, `SpecDrawer`, `FlowPackets`                    |
+| `src/icons/`      | résolution des logos (fichier fourni, simple-icons, générique)                                                 |
+| `src/examples/`   | exemples intégrés (`index.ts` pour en ajouter)                                                                 |
+| `src/prompts/`    | prompt de génération de spec                                                                                   |
+| `src/styles/`     | `tokens.css` (couleurs des deux thèmes) et feuilles par zone                                                   |
+| `tests/`          | tests Vitest                                                                                                   |
 
-## Déploiement (Netlify)
+### Fonctionnement du moteur
 
-Site statique. Netlify lit [netlify.toml](netlify.toml) : commande `npm test && npm run build`, dossier publié `dist`. Si un test échoue, rien n'est publié. Chaque push sur `main` publie en production ; les autres branches et pull requests obtiennent un lien de test (_deploy preview_).
+- **Placement** (`engine/layout.ts`) : ELK, algorithme `layered`, de gauche à droite, routage orthogonal, groupes imbriqués ; nœuds de 140 × 110. Un instantané du placement de l'exemple est testé (`npx vitest -u` le régénère après un changement volontaire).
+- **Rendu** (`components/Scene.tsx`) : groupes du plus extérieur au plus intérieur, liens, nœuds, puis paquets. Un nom long est réduit (jamais sous 14), passé sur deux lignes, puis tronqué ; le texte complet reste en infobulle.
+- **Pas à pas** (`engine/state.ts`) : les ids de `focus` et leurs groupes ancêtres sont éclairés, le reste est atténué à 25 %. Les sous-étapes sont parcourues avant l'étape suivante ; les pastilles désignent les étapes.
+- **Flux** (`engine/flow.ts`) : position des paquets calculée en fonction du temps sur le tracé du lien, une seule demande `requestAnimationFrame` en attente, arrêt au changement d'étape.
+- **Caméra** (`engine/camera.ts`) : le `viewBox` glisse en 700 ms vers la boîte des ids de `zoom` (avec une marge de 14 % et le titre du groupe parent), ajustée au rapport de la scène et recalée dans le schéma. Le zoom est plafonné à 1,8 pixel d'écran par unité, quelle que soit la largeur de la scène.
 
-Connexion du dépôt (une seule fois) :
+## Qualité (cahier, section 13)
 
-1. Netlify > **Add new site** > **Import an existing project** > **GitHub** > choisir le dépôt.
-2. Vérifier les champs (préremplis depuis `netlify.toml`) : branche de production `main`, build command `npm test && npm run build`, publish directory `dist`, base directory vide.
-3. **Deploy**. Le nom du site se change ensuite dans _Site configuration > Change site name_.
+| Exigence                                                          | État                                                                                     |
+| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| TypeScript strict, aucune erreur de lint, pas de `any` injustifié | oui (un seul `any`, dans un test, pour injecter des erreurs dans l'exemple)              |
+| Tests : validation, `checkReferences`, boîte de zoom, placement   | oui, plus flux, sous-étapes, surlignage, éditeur, prompt, contrastes                     |
+| Test de bout en bout (Playwright, facultatif)                     | non automatisé dans le dépôt ; vérifié à la main dans Chrome à chaque jalon              |
+| Boutons natifs, `aria-current="step"`, légende `aria-live`        | oui                                                                                      |
+| Contrastes suffisants dans les deux thèmes, focus visible         | oui, contrastes vérifiés par un test (AA, 4,5:1 pour le texte)                           |
+| Premier affichage de l'exemple en moins de 2 s                    | oui : 0,6 s, et 1,5 s avec un processeur ralenti 4× (mesuré dans Chrome)                 |
+| Aucune fuite d'animation lors de changements d'étapes rapides     | oui (tests de la boucle d'animation, et mesure dans Chrome après 80 changements rapides) |
+| Données d'exemple marquées comme fictives                         | oui                                                                                      |
 
-## CI
+## Déploiement
 
-[.github/workflows/ci.yml](.github/workflows/ci.yml) lance lint, contrôle du format, tests et build sur chaque push et pull request. Elle n'intervient pas dans le déploiement.
+Site statique sur Netlify, configuré par [netlify.toml](netlify.toml) : commande `npm test && npm run build`, dossier publié `dist`. Si un test échoue, rien n'est publié. Chaque push sur `main` publie en production ; chaque branche ou pull request a son lien de test (_deploy preview_). Travailler sur une branche par changement et regarder son aperçu avant de fusionner.
 
-## Spec JSON
+Connexion du dépôt (déjà faite, une seule fois) : Netlify > **Add new site** > **Import an existing project** > **GitHub** > choisir le dépôt ; vérifier branche `main`, build command `npm test && npm run build`, publish directory `dist`, base directory vide ; **Deploy**.
 
-- `src/spec/schema.ts` : schéma Zod, types déduits.
-- `src/spec/checkReferences.ts` : contrôles croisés (ids uniques, références, hiérarchie, indices de surlignage).
-- `src/spec/validate.ts` : `validateSpec(objet)` et `parseSpecJson(texte)` renvoient la spec ou une liste d'erreurs lisibles (élément, champ, raison).
-- Écart avec le cahier des charges : une étape a `panels` (liste) et non `panel`, et `highlight` accepte un indice `panel` (0 par défaut). Voir `docs/SPEC.md`, section 6.
+La CI GitHub Actions ([.github/workflows/ci.yml](.github/workflows/ci.yml)) lance lint, format, tests et build sur chaque push et pull request. Elle ne sert que de retour rapide et n'intervient pas dans le déploiement.
 
-## Placement
-
-`computeLayout(spec)` (`src/engine/layout.ts`) renvoie, de façon asynchrone, un rectangle absolu par nœud et par groupe (avec la profondeur du groupe) et une polyligne par lien. Le calcul utilise ELK (`elkjs`, algorithme `layered`, direction droite, routage orthogonal, groupes imbriqués). Un lien entre un groupe et l'un de ses descendants (par exemple Airflow vers dbt) est dessiné à part, du bord haut du conteneur au bord haut du contenu. Les tests vérifient l'absence de chevauchement, l'inclusion des enfants et un instantané du placement de l'exemple (`npx vitest -u` pour le régénérer après un changement volontaire).
-
-## Rendu et logos
-
-`Scene` (`src/components/Scene.tsx`) dessine un `<svg>` : groupes (du plus extérieur au plus intérieur), liens, nœuds. Les couleurs viennent de `src/styles/tokens.css`.
-
-Les logos se résolvent dans cet ordre : fichier fourni dans `src/assets/logos/` (voir le README de ce dossier), puis `simple-icons`, puis une icône générique selon le `kind`. Un logo fourni n'est jamais modifié ; en thème sombre, il utilise sa variante `.dark` si elle existe, sinon une pastille claire.
-
-`npm run logos:check` indique, pour chaque exemple, d'où vient chaque icône. Dans simple-icons, `youtube`, `databricks` et `airflow` (alias de `apacheairflow`) existent ; `fivetran` et `dbt` n'y sont pas.
-
-Remarque : chaque icône simple-icons est un petit fichier chargé à la demande, ce qui ajoute environ 3 400 fichiers à `dist/`. C'est voulu : n'importe quelle clé reste utilisable sans alourdir le chargement initial.
-
-## Pas à pas
-
-- **Mise en valeur** (`src/engine/state.ts`, `litIds`) : les ids de `focus` sont éclairés, les autres atténués (25 %). Les groupes ancêtres d'un élément éclairé restent visibles ; pour un lien, ce sont les groupes qui contiennent ses deux extrémités. Un `focus` vide n'atténue rien.
-- **Navigation** : boutons Précédent et Suivant, pastilles numérotées (`aria-current="step"` sur l'étape courante), et au clavier : flèche droite ou espace = suivant, flèche gauche = précédent, `0` ou `Début` = première étape. Les touches sont ignorées dans un champ de saisie, et Espace sur un bouton ne l'active qu'une fois.
-- **Panneaux** : une étape affiche tous ses `panels`, dans l'ordre (table, code, liste, DAG).
-
-## Flux animés
-
-Quand une étape a un `flow`, des paquets circulent en boucle le long du lien (`src/engine/flow.ts`, `FlowPackets`). La position se calcule en fonction du temps sur la polyligne du lien, sans lire le DOM. Sans précision dans la spec, la forme et la couleur suivent la couche de la destination (brut = points, nettoyé = carrés, agrégé = barres) ; à défaut, la couleur est celle du plus petit groupe qui contient les deux extrémités. Un lien de déclenchement (`style: "trigger"`) fait en plus pulser sa destination. La durée d'un trajet est proportionnelle à la longueur du lien (1,2 à 3,2 s).
-
-L'animation tourne avec `requestAnimationFrame` (une seule demande en attente) et s'arrête au changement d'étape. Avec `prefers-reduced-motion`, il n'y a ni paquets ni impulsion.
-
-## Zoom caméra
-
-À chaque étape, le `viewBox` du schéma glisse en 700 ms (accélération douce) vers le cadre des éléments de `zoom` (`src/engine/camera.ts`). Sans `zoom`, il revient au schéma complet.
-
-- **Cadre** : boîte englobante des ids (nœuds, groupes ou liens), étendue vers le haut jusqu'au bord de leur groupe parent pour garder son titre à l'image, avec une marge de 14 %, au moins 600 unités de large, ajustée au rapport de la scène, puis recalée à l'intérieur du schéma quand elle y tient.
-- **Rapport de la scène** : celui du schéma complet, plafonné à 2,4 pour que les zooms aient de la hauteur. Il est fixe, donc la page ne saute pas d'une étape à l'autre.
-- **Changement d'étape en cours de route** : l'animation repart du cadre réellement affiché. Elle s'arrête seule à l'arrivée.
-- **Mouvement réduit** (`prefers-reduced-motion`) : le cadre change sans déplacement progressif.
-
-## Sous-étapes et construction progressive
-
-- **Vue d'ensemble** : une étape dont le `focus` est vide n'atténue rien et, en construction progressive, montre tout le schéma.
-- **Sous-étapes** (`beats`) : **Suivant** parcourt d'abord les sous-étapes d'une étape, puis passe à la suivante ; **Précédent** fait l'inverse. Les pastilles désignent les étapes (elles mènent à la première sous-étape). Un compteur « 2/3 » s'affiche à côté du numéro d'étape quand il y a plusieurs sous-étapes.
-- **Ce qu'une sous-étape change** : son `focus` _remplace_ celui de l'étape (reprends des ids pour les conserver ; groupes ancêtres inclus), son `text` remplace le texte, son `highlight` surligne dans le panneau `highlight.panel` (le premier par défaut) : `rows` seul = lignes entières, `cols` seul = colonnes entières, les deux = leur intersection, `lines` = lignes de code. Le reste du panneau est atténué.
-- **Construction progressive** (`meta.buildMode: "progressive"`, ou le bouton « Construction progressive » pour l'essayer le temps de la session) : un élément reste invisible tant qu'aucun état (étape ou sous-étape) jusqu'à l'état courant ne l'a mis en valeur ; il apparaît alors et reste. La mise en page ne bouge pas.
-
-## Tiroir Spec
-
-Le bouton **Spec** ouvre un tiroir (à côté du schéma sur grand écran, par-dessus sur petit écran ; Échap le ferme).
-
-- **Éditeur** : le JSON est validé 250 ms après la dernière frappe. S'il est valide, le schéma se met à jour sans rechargement, à l'étape courante. Sinon, les erreurs s'affichent et la dernière version valide reste à l'écran ; cliquer sur une erreur sélectionne l'endroit fautif dans l'éditeur.
-- **Importer** un fichier `.json` (remis en forme s'il est compact), **Exporter** la spec valide (`titre-de-la-spec.json`), choisir un **exemple** intégré (`src/examples/index.ts`). Un import ou un exemple ramène à la première étape.
-- **Sauvegarde locale** : chaque version valide est enregistrée dans le navigateur (`localStorage`) et rechargée à la visite suivante. Choisir un exemple la remplace.
-- **Logos** : liste des clés d'icônes de la spec, avec une pastille « logo manquant » quand aucun fichier n'est fourni dans `src/assets/logos/`.
-- **Prompt de génération** (`src/prompts/generate-spec.md`, l'exemple intégré y est inséré) : à copier dans un assistant avec une description ou une image, puis coller le JSON obtenu dans l'éditeur. Un test vérifie que le prompt décrit toutes les clés et valeurs du schéma.
+`dist/` contient environ 3 400 petits fichiers : un par icône `simple-icons`, chargés à la demande. C'est voulu : n'importe quelle clé d'icône reste utilisable sans alourdir le chargement initial.
