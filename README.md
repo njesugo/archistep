@@ -2,7 +2,7 @@
 
 Outil web qui transforme une description d'architecture de données en schéma animé, présenté étape par étape, pour des vidéos pédagogiques. Cahier des charges : [docs/SPEC.md](docs/SPEC.md). Prototype de référence : [docs/reference/prototype.html](docs/reference/prototype.html).
 
-**État : jalon M1 (spec et validation).** La spec JSON est définie et validée (`src/spec/`), avec un exemple intégré (`src/examples/youtube-pipeline.json`). Pas encore de rendu : la page d'accueil est un squelette avec thèmes clair et sombre.
+**État : jalon M2 (placement).** La spec JSON est validée (`src/spec/`) et placée automatiquement avec ELK (`src/engine/layout.ts`). Pas encore de rendu : la page d'accueil est un squelette avec thèmes clair et sombre.
 
 **Site déployé :** <https://archistep.netlify.app/>
 
@@ -58,3 +58,7 @@ Connexion du dépôt (une seule fois) :
 - `src/spec/checkReferences.ts` : contrôles croisés (ids uniques, références, hiérarchie, indices de surlignage).
 - `src/spec/validate.ts` : `validateSpec(objet)` et `parseSpecJson(texte)` renvoient la spec ou une liste d'erreurs lisibles (élément, champ, raison).
 - Écart avec le cahier des charges : une étape a `panels` (liste) et non `panel`, et `highlight` accepte un indice `panel` (0 par défaut). Voir `docs/SPEC.md`, section 6.
+
+## Placement
+
+`computeLayout(spec)` (`src/engine/layout.ts`) renvoie, de façon asynchrone, un rectangle absolu par nœud et par groupe (avec la profondeur du groupe) et une polyligne par lien. Le calcul utilise ELK (`elkjs`, algorithme `layered`, direction droite, routage orthogonal, groupes imbriqués). Un lien entre un groupe et l'un de ses descendants (par exemple Airflow vers dbt) est dessiné à part, du bord haut du conteneur au bord haut du contenu. Les tests vérifient l'absence de chevauchement, l'inclusion des enfants et un instantané du placement de l'exemple (`npx vitest -u` pour le régénérer après un changement volontaire).
