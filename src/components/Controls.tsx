@@ -10,6 +10,8 @@ type Props = {
   drawerOpen: boolean;
   onToggleDrawer: () => void;
   onPresent: () => void;
+  laser: boolean;
+  onToggleLaser: () => void;
   onPrev: () => void;
   onNext: () => void;
   onGoTo: (index: number) => void;
@@ -27,6 +29,8 @@ export function Controls({
   drawerOpen,
   onToggleDrawer,
   onPresent,
+  laser,
+  onToggleLaser,
   onPrev,
   onNext,
   onGoTo,
@@ -78,6 +82,15 @@ export function Controls({
           onClick={onToggleProgressive}
         >
           Construction progressive : {progressive ? "oui" : "non"}
+        </button>
+        <button
+          type="button"
+          aria-pressed={laser}
+          aria-keyshortcuts="L"
+          title="Un point lumineux suit la souris, pour montrer un endroit (L)"
+          onClick={onToggleLaser}
+        >
+          Pointeur laser : {laser ? "oui" : "non"}
         </button>
         <button
           type="button"

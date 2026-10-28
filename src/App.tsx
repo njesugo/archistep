@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Controls } from "./components/Controls";
 import { DataPanels } from "./components/DataPanel";
+import { LaserPointer } from "./components/LaserPointer";
 import { SpecDrawer } from "./components/SpecDrawer";
 import { Stage } from "./components/Stage";
 import { StepCaption } from "./components/StepCaption";
@@ -32,6 +33,7 @@ export default function App() {
   const editor = useSpecEditor();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [presenting, setPresenting] = useState(false);
+  const [laser, setLaser] = useState(false);
 
   // Tout ce qui est affiché vient de la spec à laquelle appartient le placement : pendant un
   // nouveau calcul, l'ancien schéma reste à l'écran, cohérent avec sa légende.
@@ -106,6 +108,7 @@ export default function App() {
     });
   }, []);
   const exitPresentation = useCallback(() => setPresenting(false), []);
+  const toggleLaser = useCallback(() => setLaser((on) => !on), []);
 
   // En quittant le mode, le focus revient sur le bouton qui l'a ouvert.
   const wasPresenting = useRef(false);
@@ -121,8 +124,9 @@ export default function App() {
       first: stepper.first,
       present,
       exit: exitPresentation,
+      laser: toggleLaser,
     }),
-    [stepper.next, stepper.prev, stepper.first, present, exitPresentation],
+    [stepper.next, stepper.prev, stepper.first, present, exitPresentation, toggleLaser],
   );
   useShortcuts(shortcuts);
 
@@ -172,6 +176,8 @@ export default function App() {
           drawerOpen={drawerOpen}
           onToggleDrawer={() => setDrawerOpen((open) => !open)}
           onPresent={present}
+          laser={laser}
+          onToggleLaser={toggleLaser}
           onPrev={stepper.prev}
           onNext={stepper.next}
           onGoTo={stepper.goTo}
@@ -184,6 +190,7 @@ export default function App() {
           Quitter le mode présentation
         </button>
       )}
+      <LaserPointer active={laser} />
       <SpecDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}

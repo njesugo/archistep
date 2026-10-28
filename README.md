@@ -28,6 +28,10 @@ Les raccourcis sont ignorés pendant la saisie dans l'éditeur.
 
 L'en-tête, le tiroir et la barre de contrôle disparaissent ; la scène s'élargit et la légende grossit de 32 %. Seul un bouton très discret « Quitter le mode présentation » reste en haut à droite (il devient lisible au survol). Aucun anneau de focus n'est visible à l'entrée dans le mode.
 
+### Pointeur laser
+
+Le bouton **Pointeur laser** (ou la touche `L`, qui marche aussi en mode présentation) fait suivre la souris par un point rouge lumineux, pour montrer un endroit du schéma, d'un tableau ou d'un texte pendant l'enregistrement. Il remplace le curseur (les boutons et les champs gardent le leur), il est dessiné au-dessus de tout, tiroir compris, et il laisse passer les clics. Il disparaît quand la souris quitte la page ; au doigt, il n'existe que pendant le contact. Il n'est pas mémorisé d'une visite à l'autre.
+
 ### Thèmes, mouvement, petits écrans
 
 - Thèmes clair et sombre : le réglage du système, puis le bouton (mémorisé dans le navigateur).
