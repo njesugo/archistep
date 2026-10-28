@@ -9,6 +9,10 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+/* Étape à plusieurs colonnes de panneaux : la légende passe au-dessus, les panneaux ont toute la largeur. */
+.info.wide {
+  grid-template-columns: minmax(0, 1fr);
+}
 .cap {
   display: flex;
   flex-direction: column;
@@ -37,6 +41,22 @@ h2 {
   flex-direction: column;
   gap: 16px;
   min-width: 0;
+}
+.panels.grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  align-items: start;
+}
+.panels.grid .panel {
+  grid-column: span var(--span, 1);
+}
+@media (max-width: 820px) {
+  .panels.grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .panels.grid .panel {
+    grid-column: auto;
+  }
 }
 .panel {
   background: var(--card);

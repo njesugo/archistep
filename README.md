@@ -52,6 +52,7 @@ La spec JSON est la source de vérité : nœuds, groupes, liens, étapes, textes
 Le schéma a été généralisé quand il ne pouvait pas exprimer l'exemple, sans cas particulier dans le moteur :
 
 - une étape a une liste `panels` (et non un seul `panel`) ; `highlight.panel` choisit le panneau visé (0 par défaut) ;
+- les panneaux d'une étape peuvent être disposés en colonnes (`panelColumns`, `span`), voir « Panneaux en colonnes » ;
 - une étape dont le `focus` est vide est une **vue d'ensemble** : rien n'est atténué et, en construction progressive, tout est affiché ;
 - le `focus` d'une sous-étape **remplace** celui de l'étape (le cahier disait « ajoute ou remplace ») ;
 - `highlight` : `rows` seul = lignes entières, `cols` seul = colonnes entières, les deux = leur intersection ;
@@ -59,6 +60,10 @@ Le schéma a été généralisé quand il ne pouvait pas exprimer l'exemple, san
 - sans `shape` ni couleur, un flux suit la couche de sa destination (points, carrés, barres) ;
 - un bouton « Construction progressive » remplace `meta.buildMode` le temps de la session ;
 - hébergement sur Vercel et non Netlify (voir « Déploiement ») ; Node 22 au lieu de 20 (Node 20 n'est plus maintenu) ; six couleurs du thème clair ont été légèrement assombries pour atteindre le contraste AA.
+
+## Panneaux en colonnes
+
+Par défaut, les panneaux d'une étape sont empilés dans la colonne de droite. Pour les placer côte à côte (comparer deux tables, deux extraits de code, une liste et un tableau…), l'étape déclare `"panelColumns": 2` (ou 3) : la légende passe alors au-dessus et les panneaux occupent toute la largeur, dans une grille, dans l'ordre de `panels`. Un panneau peut occuper plusieurs colonnes avec `"span"` (par exemple une requête ou un DAG large : `"span": 2`). `span` ne peut pas dépasser `panelColumns` (la validation l'explique). Sur petit écran (moins de 820 px), tout s'empile. Les surlignages des sous-étapes visent toujours un panneau par son indice dans `panels`.
 
 ## Logos
 

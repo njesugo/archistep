@@ -34,10 +34,21 @@ export const edgeSchema = z.strictObject({
 
 const columnIndexes = z.array(z.number().int().min(0));
 
+/** Nombre maximal de colonnes de panneaux dans une étape. */
+export const MAX_PANEL_COLUMNS = 3;
+const columnCount = z.number().int().min(1).max(MAX_PANEL_COLUMNS);
+
+// Champs communs à tous les panneaux.
+const common = {
+  title: text,
+  /** Nombre de colonnes occupées dans la disposition de l'étape (1 par défaut). */
+  span: columnCount.optional(),
+};
+
 export const panelSchema = z.discriminatedUnion("type", [
   z.strictObject({
     type: z.literal("table"),
-    title: text,
+    ...common,
     layer: layer.optional(),
     columns: z.array(z.string()).min(1),
     rows: z.array(z.array(z.string())),
@@ -46,19 +57,19 @@ export const panelSchema = z.discriminatedUnion("type", [
   }),
   z.strictObject({
     type: z.literal("code"),
-    title: text,
+    ...common,
     language: z.enum(["json", "sql", "python", "yaml", "text"]),
     content: z.string(),
     note: z.string().optional(),
   }),
   z.strictObject({
     type: z.literal("list"),
-    title: text,
+    ...common,
     items: z.array(z.strictObject({ label: text, text })),
   }),
   z.strictObject({
     type: z.literal("dag"),
-    title: text,
+    ...common,
     tasks: z.array(z.strictObject({ name: text, state: z.enum(["ok", "run", "wait", "fail"]) })),
   }),
 ]);
@@ -89,6 +100,8 @@ export const stepSchema = z.strictObject({
       count: z.number().int().min(1).max(12).optional(),
     })
     .optional(),
+  /** Nombre de colonnes de la zone des panneaux (1 par défaut : empilés). */
+  panelColumns: columnCount.optional(),
   panels: z.array(panelSchema).optional(),
   beats: z.array(beatSchema).optional(),
 });
