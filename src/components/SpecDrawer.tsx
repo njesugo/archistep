@@ -22,6 +22,7 @@ type Props = {
   onImport: (text: string) => void;
   onExport: () => void;
   onLoadExample: (id: string) => void;
+  onGenerate: () => void;
 };
 
 const SOURCE_HINT = {
@@ -40,6 +41,7 @@ export function SpecDrawer({
   onImport,
   onExport,
   onLoadExample,
+  onGenerate,
 }: Props) {
   const area = useRef<HTMLTextAreaElement>(null);
   const file = useRef<HTMLInputElement>(null);
@@ -126,6 +128,9 @@ export function SpecDrawer({
         </button>
         <button type="button" onClick={onShare}>
           Copier le lien
+        </button>
+        <button type="button" onClick={onGenerate}>
+          Générer avec l’IA
         </button>
         <select
           aria-label="Exemples"

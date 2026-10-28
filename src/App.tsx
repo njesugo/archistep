@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Controls } from "./components/Controls";
 import { DataPanels } from "./components/DataPanel";
 import { LaserPointer } from "./components/LaserPointer";
@@ -16,6 +16,9 @@ import { useLayout } from "./useLayout";
 import { useReducedMotion } from "./useReducedMotion";
 import { useShortcuts } from "./useShortcuts";
 import { useSpecEditor } from "./useSpecEditor";
+
+// Chargé à la demande : la génération par IA (et son SDK) n'alourdit pas le premier affichage.
+const GenerateDialog = lazy(() => import("./components/GenerateDialog"));
 import { useStepper } from "./useStepper";
 
 function readStoredTheme(): string | null {
@@ -31,6 +34,9 @@ export default function App() {
     resolveTheme(readStoredTheme(), window.matchMedia("(prefers-color-scheme: dark)").matches),
   );
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [generateOpen, setGenerateOpen] = useState(false);
+  // Une fois ouverte, la fenêtre reste montée : elle garde la description, les images et le résultat.
+  const [generateMounted, setGenerateMounted] = useState(false);
   // Un lien de partage illisible : on ouvre le tiroir, où l'erreur est expliquée.
   const openDrawer = useCallback(() => setDrawerOpen(true), []);
   const editor = useSpecEditor({ onLinkError: openDrawer });
@@ -210,6 +216,15 @@ export default function App() {
           Quitter le mode présentation
         </button>
       )}
+      {generateMounted && (
+        <Suspense fallback={null}>
+          <GenerateDialog
+            open={generateOpen}
+            onClose={() => setGenerateOpen(false)}
+            onUse={(json) => afterLoad(editor.load(json))}
+          />
+        </Suspense>
+      )}
       <LaserPointer active={laser} />
       <SpecDrawer
         open={drawerOpen}
@@ -227,6 +242,10 @@ export default function App() {
           )
         }
         onLoadExample={(id) => afterLoad(editor.loadExample(id))}
+        onGenerate={() => {
+          setGenerateMounted(true);
+          setGenerateOpen(true);
+        }}
       />
     </>
   );

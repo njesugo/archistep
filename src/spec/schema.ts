@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+// Pas de compilation à la volée (`new Function`) : la politique de sécurité du contenu l'interdit,
+// et elle ne ferait gagner que des microsecondes sur des specs de cette taille. À régler avant la
+// création des schémas ci-dessous, car Zod teste `eval` à ce moment-là.
+z.config({ jitless: true });
+
 const layer = z.enum(["bronze", "silver", "gold"]);
 
 const id = z.string().min(1, "l'identifiant ne peut pas être vide");
