@@ -2,7 +2,7 @@
 
 Outil web qui transforme une description d'architecture de données en schéma animé, présenté étape par étape, pour des vidéos pédagogiques. Cahier des charges : [docs/SPEC.md](docs/SPEC.md). Prototype de référence : [docs/reference/prototype.html](docs/reference/prototype.html).
 
-**État : jalon M5 (flux animés).** Pas à pas avec paquets qui circulent le long des liens et impulsion de déclenchement. Pas encore de zoom caméra.
+**État : jalon M6 (zoom caméra).** Pas à pas avec flux animés et caméra qui cadre l'élément expliqué. Pas encore de construction progressive ni de sous-étapes.
 
 **Site déployé :** <https://archistep.netlify.app/>
 
@@ -84,3 +84,12 @@ Remarque : chaque icône simple-icons est un petit fichier chargé à la demande
 Quand une étape a un `flow`, des paquets circulent en boucle le long du lien (`src/engine/flow.ts`, `FlowPackets`). La position se calcule en fonction du temps sur la polyligne du lien, sans lire le DOM. Sans précision dans la spec, la forme et la couleur suivent la couche de la destination (brut = points, nettoyé = carrés, agrégé = barres) ; à défaut, la couleur est celle du plus petit groupe qui contient les deux extrémités. Un lien de déclenchement (`style: "trigger"`) fait en plus pulser sa destination. La durée d'un trajet est proportionnelle à la longueur du lien (1,2 à 3,2 s).
 
 L'animation tourne avec `requestAnimationFrame` (une seule demande en attente) et s'arrête au changement d'étape. Avec `prefers-reduced-motion`, il n'y a ni paquets ni impulsion.
+
+## Zoom caméra
+
+À chaque étape, le `viewBox` du schéma glisse en 700 ms (accélération douce) vers le cadre des éléments de `zoom` (`src/engine/camera.ts`). Sans `zoom`, il revient au schéma complet.
+
+- **Cadre** : boîte englobante des ids (nœuds, groupes ou liens), étendue vers le haut jusqu'au bord de leur groupe parent pour garder son titre à l'image, avec une marge de 14 %, au moins 600 unités de large, ajustée au rapport de la scène, puis recalée à l'intérieur du schéma quand elle y tient.
+- **Rapport de la scène** : celui du schéma complet, plafonné à 2,4 pour que les zooms aient de la hauteur. Il est fixe, donc la page ne saute pas d'une étape à l'autre.
+- **Changement d'étape en cours de route** : l'animation repart du cadre réellement affiché. Elle s'arrête seule à l'arrivée.
+- **Mouvement réduit** (`prefers-reduced-motion`) : le cadre change sans déplacement progressif.

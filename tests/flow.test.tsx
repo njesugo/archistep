@@ -7,10 +7,9 @@ import {
   pointAt,
   polylineLength,
   resolveFlow,
-  runAnimation,
   travelDuration,
-  type Scheduler,
 } from "../src/engine/flow";
+import { runAnimation, type Scheduler } from "../src/engine/animation";
 import { computeLayout } from "../src/engine/layout";
 import { validateSpec } from "../src/spec/validate";
 
@@ -144,6 +143,18 @@ describe("runAnimation (arrêt propre)", () => {
     const before = calls;
     flush();
     expect(calls).toBe(before); // plus rien ne tourne
+  });
+
+  it("ne replanifie pas quand l'arrêt est demandé depuis la fonction d'image", () => {
+    const { scheduler, pending, flush } = fakeScheduler();
+    const stop: { current: () => void } = { current: () => {} };
+    stop.current = runAnimation(
+      () => stop.current(),
+      scheduler,
+      () => 0,
+    );
+    flush();
+    expect(pending.size).toBe(0);
   });
 
   it("ignore une image déjà partie quand on arrête dans le même instant", () => {

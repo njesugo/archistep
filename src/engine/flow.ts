@@ -1,3 +1,4 @@
+import { easeInOut } from "./animation";
 import type { Layout, Point, Rect } from "./layout";
 import { parentMap } from "./layout";
 import type { Spec, Step } from "../spec/schema";
@@ -93,8 +94,6 @@ const MAX_DURATION = 3200;
 const PAUSE = 700;
 export const PACKET_GAP = 260;
 
-export const easeInOut = (t: number) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
-
 /** Durée d'un trajet : proportionnelle à la longueur, bornée. */
 export function travelDuration(length: number): number {
   return Math.min(Math.max(length / SPEED, MIN_DURATION), MAX_DURATION);
@@ -120,35 +119,4 @@ export function packetFrame(
   const t = m / duration;
   const p = pointAt(points, length * easeInOut(t));
   return { visible: true, x: p.x, y: p.y, opacity: Math.min(1, t * 8, (1 - t) * 8) };
-}
-
-// --- boucle d'animation ---
-
-export type Scheduler = {
-  request: (cb: (now: number) => void) => number;
-  cancel: (handle: number) => void;
-};
-
-/**
- * Appelle `frame(elapsed)` à chaque image jusqu'à l'appel de la fonction renvoyée.
- * Une seule demande d'image est en attente à tout moment ; l'arrêt l'annule.
- */
-export function runAnimation(
-  frame: (elapsed: number) => void,
-  scheduler: Scheduler,
-  now: () => number,
-): () => void {
-  const start = now();
-  let handle = 0;
-  let stopped = false;
-  const tick = () => {
-    if (stopped) return;
-    frame(now() - start);
-    handle = scheduler.request(tick);
-  };
-  handle = scheduler.request(tick);
-  return () => {
-    stopped = true;
-    scheduler.cancel(handle);
-  };
 }
