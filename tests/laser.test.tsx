@@ -67,6 +67,10 @@ describe("bouton Pointeur laser", () => {
         onPresent={() => {}}
         laser={laser}
         onToggleLaser={() => {}}
+        autoplay="off"
+        onTogglePlay={() => {}}
+        speed="normal"
+        onSpeed={() => {}}
         onPrev={() => {}}
         onNext={() => {}}
         onGoTo={() => {}}

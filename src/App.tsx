@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Controls } from "./components/Controls";
+import { Controls, type AutoplayState } from "./components/Controls";
 import { DataPanels } from "./components/DataPanel";
 import { LaserPointer } from "./components/LaserPointer";
 import { SpecDrawer } from "./components/SpecDrawer";
@@ -9,10 +9,12 @@ import { downloadText, slugify } from "./download";
 import { frameFor, minFrameWidth, stageAspect } from "./engine/camera";
 import { parentMap } from "./engine/layout";
 import { resolveFlow } from "./engine/flow";
+import { DEFAULT_SPEED, dwellMs, speedFactor } from "./engine/autoplay";
 import { litIds, positions, revealedIds } from "./engine/state";
 import { resolveTheme, THEME_KEY, toggleTheme, type Theme } from "./theme";
 import { useElementWidth } from "./useElementWidth";
 import { useLayout } from "./useLayout";
+import { useAutoAdvance } from "./useAutoAdvance";
 import { useReducedMotion } from "./useReducedMotion";
 import { useShortcuts } from "./useShortcuts";
 import { useSpecEditor } from "./useSpecEditor";
@@ -42,6 +44,9 @@ export default function App() {
   const editor = useSpecEditor({ onLinkError: openDrawer });
   const [presenting, setPresenting] = useState(false);
   const [laser, setLaser] = useState(false);
+  // Lecture automatique : les étapes défilent seules ; toute navigation à la main la coupe.
+  const [playing, setPlaying] = useState(false);
+  const [speedId, setSpeedId] = useState<string>(DEFAULT_SPEED);
 
   // Tout ce qui est affiché vient de la spec à laquelle appartient le placement : pendant un
   // nouveau calcul, l'ancien schéma reste à l'écran, cohérent avec sa légende.
@@ -53,6 +58,48 @@ export default function App() {
   const stepper = useStepper(allPositions, spec.steps.length);
   const step = spec.steps[stepper.step];
   const beat = step?.beats?.[stepper.beat];
+
+  const { next, prev, first, goTo: goToStep, index, atEnd } = stepper;
+
+  // Lecture automatique : un minuteur fait avancer d'un état quand le temps de lecture est écoulé.
+  // Elle est suspendue pendant que le tiroir ou la fenêtre de génération sont ouverts, s'arrête
+  // à la fin, et toute navigation à la main la coupe (on reprend la main).
+  const lastIndex = allPositions.length - 1;
+  const idle = !drawerOpen && !generateOpen;
+  const autoplay: AutoplayState = !playing ? "off" : idle ? "on" : "paused";
+  const advance = useCallback(() => {
+    next();
+    if (index + 1 >= lastIndex) setPlaying(false);
+  }, [next, index, lastIndex]);
+  const dwell = step ? dwellMs(step, beat, speedFactor(speedId)) : 0;
+  useAutoAdvance(playing && idle, dwell, advance, index);
+  const togglePlay = useCallback(() => {
+    if (playing) {
+      setPlaying(false);
+      return;
+    }
+    if (atEnd) first(); // relancer depuis la fin : on repart du début
+    setPlaying(true);
+  }, [playing, atEnd, first]);
+  const goPrev = useCallback(() => {
+    setPlaying(false);
+    prev();
+  }, [prev]);
+  const goNext = useCallback(() => {
+    setPlaying(false);
+    next();
+  }, [next]);
+  const goFirst = useCallback(() => {
+    setPlaying(false);
+    first();
+  }, [first]);
+  const goTo = useCallback(
+    (index: number) => {
+      setPlaying(false);
+      goToStep(index);
+    },
+    [goToStep],
+  );
 
   // Construction progressive : l'option de la spec, que le bouton peut remplacer le temps de la
   // session (jusqu'au prochain chargement de spec).
@@ -127,20 +174,22 @@ export default function App() {
 
   const shortcuts = useMemo(
     () => ({
-      next: stepper.next,
-      prev: stepper.prev,
-      first: stepper.first,
+      next: goNext,
+      prev: goPrev,
+      first: goFirst,
       present,
       exit: exitPresentation,
       laser: toggleLaser,
+      play: togglePlay,
     }),
-    [stepper.next, stepper.prev, stepper.first, present, exitPresentation, toggleLaser],
+    [goNext, goPrev, goFirst, present, exitPresentation, toggleLaser, togglePlay],
   );
   useShortcuts(shortcuts);
 
   /** Après un import ou le choix d'un exemple : on repart de la première étape. */
   function afterLoad(loaded: unknown) {
     if (!loaded) return;
+    setPlaying(false);
     stepper.first();
     setOverride(null);
   }
@@ -204,9 +253,13 @@ export default function App() {
           onPresent={present}
           laser={laser}
           onToggleLaser={toggleLaser}
-          onPrev={stepper.prev}
-          onNext={stepper.next}
-          onGoTo={stepper.goTo}
+          autoplay={autoplay}
+          onTogglePlay={togglePlay}
+          speed={speedId}
+          onSpeed={setSpeedId}
+          onPrev={goPrev}
+          onNext={goNext}
+          onGoTo={goTo}
           themeLabel={theme === "dark" ? "Thème clair" : "Thème sombre"}
           onToggleTheme={onToggleTheme}
         />

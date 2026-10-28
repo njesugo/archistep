@@ -39,12 +39,12 @@ export function litIds(spec: Spec, step: Step, beat?: Beat): Set<string> | null 
   return lit;
 }
 
-export type ShortcutAction = "next" | "prev" | "first" | "present" | "exit" | "laser";
+export type ShortcutAction = "next" | "prev" | "first" | "present" | "exit" | "laser" | "play";
 
 /**
  * Raccourcis clavier (cahier, section 8) : flèche droite ou Espace = suivant, flèche gauche =
  * précédent, 0 ou Début = première étape, P = mode présentation, Échap = quitter,
- * L = pointeur laser.
+ * L = pointeur laser, A = lecture automatique.
  * Sur un bouton, Espace le déclenche déjà lui-même : on ne l'intercepte pas, sinon l'étape
  * avancerait deux fois.
  */
@@ -65,6 +65,9 @@ export function keyAction(key: string, onButton: boolean): ShortcutAction | null
     case "l":
     case "L":
       return "laser";
+    case "a":
+    case "A":
+      return "play";
     case "Escape":
       return "exit";
     default:
