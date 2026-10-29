@@ -71,6 +71,18 @@
 .dim {
   opacity: 0.25;
 }
+.node rect {
+  transition: fill 400ms ease;
+}
+/* extrémités du flux en cours : fond teinté de sa couleur */
+.node.tinted rect {
+  fill: color-mix(in srgb, var(--tint) 16%, var(--bg));
+}
+@media (prefers-reduced-motion: reduce) {
+  .node rect {
+    transition: none;
+  }
+}
 .node.on rect {
   stroke: var(--c, var(--fg));
   stroke-width: 3;

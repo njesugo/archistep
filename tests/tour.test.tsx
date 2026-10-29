@@ -107,6 +107,37 @@ describe("rendu de l'animation continue", () => {
     expect(html).not.toContain("packets dim");
   });
 
+  it("teinte les deux extrémités du flux en cours, de sa couleur, et rien d'autre", async () => {
+    const layout = await computeLayout(spec);
+    const flows = tourFlows(
+      spec,
+      spec.steps.findIndex((s) => s.id === "ingestion"),
+      layout,
+    );
+    const flow = flows[0]!;
+    const html = renderToStaticMarkup(
+      <Scene spec={spec} layout={layout} lit={null} flows={flows} tintEnds />,
+    );
+    const tinted = [...html.matchAll(/class="node[^"]*tinted" data-id="([^"]+)"/g)].map(
+      (m) => m[1],
+    );
+    expect(tinted.sort()).toEqual(
+      [flow.from, flow.to].filter((id) => spec.nodes.some((n) => n.id === id)).sort(),
+    );
+    expect(html).toContain(`--tint:var(${flow.color})`);
+  });
+
+  it("ne teinte rien hors animation continue, ni sans flux", async () => {
+    const layout = await computeLayout(spec);
+    const flows = tourFlows(spec, 1, layout);
+    expect(renderToStaticMarkup(<Scene spec={spec} layout={layout} flows={flows} />)).not.toContain(
+      "tinted",
+    );
+    expect(
+      renderToStaticMarkup(<Scene spec={spec} layout={layout} flows={[]} tintEnds />),
+    ).not.toContain("tinted");
+  });
+
   it("ne dessine aucun paquet, aucune impulsion, quand il n'y a pas de flux", async () => {
     const layout = await computeLayout(spec);
     const html = renderToStaticMarkup(

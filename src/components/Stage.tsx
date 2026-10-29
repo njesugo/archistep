@@ -19,6 +19,8 @@ type Props = {
   lit: ReadonlySet<string> | null;
   revealed: ReadonlySet<string> | null;
   flows: ResolvedFlow[];
+  /** Fond teinté sur les extrémités du flux en cours (animation continue). */
+  tintEnds?: boolean;
   frame: Frame | undefined;
   animateCamera: boolean;
   aspect: number | undefined;
@@ -60,6 +62,7 @@ export function Stage({
   lit,
   revealed,
   flows,
+  tintEnds,
   frame,
   animateCamera,
   aspect,
@@ -82,6 +85,7 @@ export function Stage({
             lit={lit}
             revealed={revealed}
             flows={flows}
+            tintEnds={tintEnds}
             frame={frame}
             animateCamera={animateCamera}
             aspect={aspect}
